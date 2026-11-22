@@ -1,6 +1,10 @@
 from functools import lru_cache
-from typing import List
+from pathlib import Path
+from typing import List, Tuple
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = BACKEND_DIR.parent
 
 
 class Settings(BaseSettings):
@@ -24,7 +28,7 @@ class Settings(BaseSettings):
     SEED_MEMBER2_PASSWORD: str = "Member2Password123!"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(str(BACKEND_DIR / ".env"), str(ROOT_DIR / ".env"), ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
