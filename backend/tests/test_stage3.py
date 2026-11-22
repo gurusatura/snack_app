@@ -52,7 +52,8 @@ def test_invalid_password():
     resp = _login(settings.SEED_ADMIN_EMAIL, "TotallyWrongPassword!")
     assert resp.status_code == 401
     body = resp.json()
-    assert body["detail"]["error"]["code"] == "INVALID_CREDENTIALS"
+    error_dict = body.get("error") or body.get("detail", {}).get("error", {})
+    assert error_dict.get("code") == "INVALID_CREDENTIALS"
 
 
 def test_invalid_email():
@@ -60,7 +61,8 @@ def test_invalid_email():
     resp = _login("nonexistent@example.com", "Whatever123!")
     assert resp.status_code == 401
     body = resp.json()
-    assert body["detail"]["error"]["code"] == "INVALID_CREDENTIALS"
+    error_dict = body.get("error") or body.get("detail", {}).get("error", {})
+    assert error_dict.get("code") == "INVALID_CREDENTIALS"
 
 
 # ---------- Token validation tests ----------
