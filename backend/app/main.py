@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.routers.auth import router as auth_router
 from app.routers.snacks import router as snacks_router
+from app.routers.activity import router as activity_router
 
 settings = get_settings()
 
@@ -57,6 +58,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # Register routers
 app.include_router(auth_router)
 app.include_router(snacks_router)
+app.include_router(activity_router)
 
 
 @app.get("/health", tags=["Health"])

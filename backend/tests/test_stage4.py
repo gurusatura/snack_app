@@ -29,6 +29,32 @@ def ensure_seed():
     seed_database()
 
 
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_residual_test_snacks():
+    yield
+    db = SessionLocal()
+    try:
+        test_snacks = (
+            db.query(Snack)
+            .filter(
+                Snack.name.like("Test Snack%")
+                | Snack.name.like("Delete Snack%")
+                | Snack.name.like("Flow Snack%")
+                | Snack.name.like("Concurrency Snack%")
+                | Snack.name.like("Vote Summary Snack%")
+                | Snack.name.like("Patch Test%")
+            )
+            .all()
+        )
+        for s in test_snacks:
+            db.query(Activity).filter(Activity.snack_id == s.id).delete(synchronize_session=False)
+            db.query(Vote).filter(Vote.snack_id == s.id).delete(synchronize_session=False)
+            db.delete(s)
+        db.commit()
+    finally:
+        db.close()
+
+
 def _get_token(email: str, password: str) -> str:
     res = client.post("/auth/login", json={"email": email, "password": password})
     assert res.status_code == 200
@@ -95,7 +121,19 @@ def test_list_snacks_filters_and_search(member_token):
     search_items = res_search.json()["items"]
     assert any("peanut" in item["name"].lower() for item in search_items)
 
-    # 7. Pagination
+    # 7. Combined Search and Category filter (SQL AND condition)
+    res_comb = client.get("/snacks?search=pea&category=savoury", headers=_auth(member_token))
+    assert res_comb.status_code == 200
+    comb_items = res_comb.json()["items"]
+    assert len(comb_items) >= 1
+    assert all("pea" in item["name"].lower() and item["category"] == "savoury" for item in comb_items)
+
+    # Combined Search and Category mismatch returns empty list
+    res_mismatch = client.get("/snacks?search=pea&category=sweet", headers=_auth(member_token))
+    assert res_mismatch.status_code == 200
+    assert len(res_mismatch.json()["items"]) == 0
+
+    # 8. Pagination
     res_page = client.get("/snacks?page=1&limit=2", headers=_auth(member_token))
     assert res_page.status_code == 200
     pdata = res_page.json()
@@ -209,22 +247,32 @@ def test_admin_delete_snack_and_restrict_integrity(admin_token):
     )
     snack_id = res_create.json()["id"]
 
-    # 2. Add activity history (restock)
-    client.post(
-        f"/snacks/{snack_id}/restock",
-        headers=_auth(admin_token),
-        json={"amount": 5},
-    )
+    try:
+        # 2. Add activity history (restock)
+        client.post(
+            f"/snacks/{snack_id}/restock",
+            headers=_auth(admin_token),
+            json={"amount": 5},
+        )
 
-    # 3. Attempt delete: must return 409 CANNOT_DELETE_SNACK (FK RESTRICT)
-    res_del = client.delete(f"/snacks/{snack_id}", headers=_auth(admin_token))
-    assert res_del.status_code == 409
-    err = res_del.json().get("error") or res_del.json().get("detail", {}).get("error")
-    assert err["code"] == "CANNOT_DELETE_SNACK"
+        # 3. Attempt delete: must return 409 CANNOT_DELETE_SNACK (FK RESTRICT)
+        res_del = client.delete(f"/snacks/{snack_id}", headers=_auth(admin_token))
+        assert res_del.status_code == 409
+        err = res_del.json().get("error") or res_del.json().get("detail", {}).get("error")
+        assert err["code"] == "CANNOT_DELETE_SNACK"
 
-    # Delete non-existent returns 404
-    res_404 = client.delete("/snacks/999999", headers=_auth(admin_token))
-    assert res_404.status_code == 404
+        # Delete non-existent returns 404
+        res_404 = client.delete("/snacks/999999", headers=_auth(admin_token))
+        assert res_404.status_code == 404
+    finally:
+        # Clean up test snack and its activity so database stays clean
+        db = SessionLocal()
+        try:
+            db.query(Activity).filter(Activity.snack_id == snack_id).delete(synchronize_session=False)
+            db.query(Snack).filter(Snack.id == snack_id).delete(synchronize_session=False)
+            db.commit()
+        finally:
+            db.close()
 
 
 # ---------- 4. Consume & Restock (Atomic Actions & Input Validation) ----------
@@ -257,25 +305,35 @@ def test_consume_and_restock_flow(admin_token, member_token):
     )
     snack_id = res_create.json()["id"]
 
-    # Member consumes 2 -> remaining 3
-    res_con = client.post(f"/snacks/{snack_id}/consume", headers=_auth(member_token), json={"amount": 2})
-    assert res_con.status_code == 200
-    assert res_con.json()["remaining_quantity"] == 3
+    try:
+        # Member consumes 2 -> remaining 3
+        res_con = client.post(f"/snacks/{snack_id}/consume", headers=_auth(member_token), json={"amount": 2})
+        assert res_con.status_code == 200
+        assert res_con.json()["remaining_quantity"] == 3
 
-    # Member attempts to consume 5 when only 3 remaining -> 409 INSUFFICIENT_STOCK
-    res_fail = client.post(f"/snacks/{snack_id}/consume", headers=_auth(member_token), json={"amount": 5})
-    assert res_fail.status_code == 409
-    err = res_fail.json().get("error") or res_fail.json().get("detail", {}).get("error")
-    assert err["code"] == "INSUFFICIENT_STOCK"
+        # Member attempts to consume 5 when only 3 remaining -> 409 INSUFFICIENT_STOCK
+        res_fail = client.post(f"/snacks/{snack_id}/consume", headers=_auth(member_token), json={"amount": 5})
+        assert res_fail.status_code == 409
+        err = res_fail.json().get("error") or res_fail.json().get("detail", {}).get("error")
+        assert err["code"] == "INSUFFICIENT_STOCK"
 
-    # Admin restocks 10 -> new quantity 13
-    res_restock = client.post(f"/snacks/{snack_id}/restock", headers=_auth(admin_token), json={"amount": 10})
-    assert res_restock.status_code == 200
-    assert res_restock.json()["new_quantity"] == 13
+        # Admin restocks 10 -> new quantity 13
+        res_restock = client.post(f"/snacks/{snack_id}/restock", headers=_auth(admin_token), json={"amount": 10})
+        assert res_restock.status_code == 200
+        assert res_restock.json()["new_quantity"] == 13
 
-    # Member cannot restock
-    res_mem_restock = client.post(f"/snacks/{snack_id}/restock", headers=_auth(member_token), json={"amount": 5})
-    assert res_mem_restock.status_code == 403
+        # Member cannot restock
+        res_mem_restock = client.post(f"/snacks/{snack_id}/restock", headers=_auth(member_token), json={"amount": 5})
+        assert res_mem_restock.status_code == 403
+    finally:
+        # Clean up test snack and its activity records
+        db = SessionLocal()
+        try:
+            db.query(Activity).filter(Activity.snack_id == snack_id).delete(synchronize_session=False)
+            db.query(Snack).filter(Snack.id == snack_id).delete(synchronize_session=False)
+            db.commit()
+        finally:
+            db.close()
 
 
 # ---------- 5. Voting & Snack of the Week Summary ----------
@@ -290,36 +348,46 @@ def test_vote_and_summary(admin_token, member_token, member2_token):
     )
     snack_id = res_create.json()["id"]
 
-    # Member 1 votes
-    res_v1 = client.post(f"/snacks/{snack_id}/vote", headers=_auth(member_token))
-    assert res_v1.status_code == 201
+    try:
+        # Member 1 votes
+        res_v1 = client.post(f"/snacks/{snack_id}/vote", headers=_auth(member_token))
+        assert res_v1.status_code == 201
 
-    # Member 1 duplicate vote -> 409 ALREADY_VOTED
-    res_v1_dup = client.post(f"/snacks/{snack_id}/vote", headers=_auth(member_token))
-    assert res_v1_dup.status_code == 409
-    err = res_v1_dup.json().get("error") or res_v1_dup.json().get("detail", {}).get("error")
-    assert err["code"] == "ALREADY_VOTED"
+        # Member 1 duplicate vote -> 409 ALREADY_VOTED
+        res_v1_dup = client.post(f"/snacks/{snack_id}/vote", headers=_auth(member_token))
+        assert res_v1_dup.status_code == 409
+        err = res_v1_dup.json().get("error") or res_v1_dup.json().get("detail", {}).get("error")
+        assert err["code"] == "ALREADY_VOTED"
 
-    # Member 2 votes
-    res_v2 = client.post(f"/snacks/{snack_id}/vote", headers=_auth(member2_token))
-    assert res_v2.status_code == 201
+        # Member 2 votes
+        res_v2 = client.post(f"/snacks/{snack_id}/vote", headers=_auth(member2_token))
+        assert res_v2.status_code == 201
 
-    # Check summary: snack_of_the_week should reflect votes
-    res_summary = client.get("/snacks/summary", headers=_auth(member_token))
-    assert res_summary.status_code == 200
-    sdata = res_summary.json()
-    assert "stock_summary" in sdata
-    assert sdata["stock_summary"]["stocked"] >= 1
-    assert sdata["snack_of_the_week"] is not None
-    assert sdata["snack_of_the_week"]["votes"] >= 2
+        # Check summary: snack_of_the_week should reflect votes
+        res_summary = client.get("/snacks/summary", headers=_auth(member_token))
+        assert res_summary.status_code == 200
+        sdata = res_summary.json()
+        assert "stock_summary" in sdata
+        assert sdata["stock_summary"]["stocked"] >= 1
+        assert sdata["snack_of_the_week"] is not None
+        assert sdata["snack_of_the_week"]["votes"] >= 2
 
-    # Member 1 unvotes
-    res_del_v = client.delete(f"/snacks/{snack_id}/vote", headers=_auth(member_token))
-    assert res_del_v.status_code == 200
+        # Member 1 unvotes
+        res_del_v = client.delete(f"/snacks/{snack_id}/vote", headers=_auth(member_token))
+        assert res_del_v.status_code == 200
 
-    # Member 1 unvotes again -> 404 VOTE_NOT_FOUND
-    res_del_v2 = client.delete(f"/snacks/{snack_id}/vote", headers=_auth(member_token))
-    assert res_del_v2.status_code == 404
+        # Member 1 unvotes again -> 404 VOTE_NOT_FOUND
+        res_del_v2 = client.delete(f"/snacks/{snack_id}/vote", headers=_auth(member_token))
+        assert res_del_v2.status_code == 404
+    finally:
+        # Clean up test snack and its votes
+        db = SessionLocal()
+        try:
+            db.query(Vote).filter(Vote.snack_id == snack_id).delete(synchronize_session=False)
+            db.query(Snack).filter(Snack.id == snack_id).delete(synchronize_session=False)
+            db.commit()
+        finally:
+            db.close()
 
 
 # ---------- 6. CRITICAL CONCURRENCY TEST ----------
@@ -422,6 +490,11 @@ def test_concurrency_real_server_supabase(admin_token, member_token):
             assert len(activity_records) == 3, (
                 f"Expected exactly 3 activity records, got {len(activity_records)}"
             )
+
+            # Cleanup concurrency test snack and activity records
+            db.query(Activity).filter(Activity.snack_id == target_snack_id).delete(synchronize_session=False)
+            db.query(Snack).filter(Snack.id == target_snack_id).delete(synchronize_session=False)
+            db.commit()
         finally:
             db.close()
 

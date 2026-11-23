@@ -93,3 +93,28 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
+
+
+# ---------- Activity Schemas (Admin Bonus Feature) ----------
+
+class ActivityOut(BaseModel):
+    id: int
+    user_id: int
+    user_name: str
+    user_email: str
+    snack_id: int
+    snack_name: str
+    action: str
+    amount: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ActivityListResponse(BaseModel):
+    items: List[ActivityOut]
+    total: int
+    page: int
+    limit: int
+    total_pages: int
+

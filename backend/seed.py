@@ -7,7 +7,7 @@ from app.models import User, Snack, UserRole, SnackCategory
 from app.security import hash_password
 
 
-def seed_database():
+def seed_database(reset_stock: bool = False):
     """
     Seed initial users and sample snacks into the database.
     - Credentials are read exclusively from environment variables via Settings.
@@ -110,10 +110,15 @@ def seed_database():
         ]
 
         snacks_created = 0
+        snacks_updated = 0
         for s in snacks_to_seed:
             existing = db.query(Snack).filter_by(name=s["name"]).first()
             if existing:
-                # Silently skip existing snack
+                if reset_stock:
+                    existing.quantity = s["quantity"]
+                    existing.low_stock_threshold = s["low_stock_threshold"]
+                    existing.category = s["category"]
+                    snacks_updated += 1
                 continue
             new_snack = Snack(
                 name=s["name"],
@@ -125,7 +130,7 @@ def seed_database():
             snacks_created += 1
 
         db.commit()
-        print(f"Seed completed successfully: {users_created} users added, {snacks_created} snacks added.")
+        print(f"Seed completed successfully: {users_created} users added, {snacks_created} snacks added, {snacks_updated} snacks reset.")
     except Exception as exc:
         db.rollback()
         print(f"Error during seeding: {exc}", file=sys.stderr)
@@ -135,4 +140,5 @@ def seed_database():
 
 
 if __name__ == "__main__":
-    seed_database()
+    reset_flag = "--reset" in sys.argv
+    seed_database(reset_stock=reset_flag)

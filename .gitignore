@@ -43,3 +43,5 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+.agents/
+skills-lock.json
