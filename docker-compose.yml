@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: snack_overflow_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: snack_overflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d snack_overflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: snack_overflow_backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgrespassword@db:5432/snack_overflow
+      DIRECT_URL: postgresql://postgres:postgrespassword@db:5432/snack_overflow
+      JWT_SECRET: super_secure_docker_compose_jwt_secret_32_bytes_long
+      JWT_EXPIRE_MINUTES: 1440
+      CORS_ORIGIN: http://localhost:3000,http://127.0.0.1:3000
+      SEED_ADMIN_EMAIL: admin@snackoverflow.local
+      SEED_ADMIN_PASSWORD: AdminPassword123!
+      SEED_MEMBER1_EMAIL: member1@snackoverflow.local
+      SEED_MEMBER1_PASSWORD: Member1Password123!
+      SEED_MEMBER2_EMAIL: member2@snackoverflow.local
+      SEED_MEMBER2_PASSWORD: Member2Password123!
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head && python seed.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    container_name: snack_overflow_frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

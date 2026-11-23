@@ -81,7 +81,8 @@ flowchart TD
 | **Frontend Framework** | Next.js (App Router) | `16.4.6` | React 19, Server Components, client interactivity, production bundle optimization. |
 | **Styling** | Tailwind CSS | `4.3.3` | Clean utility-first design, high-contrast accessible color palette, zero CSS bloat. |
 | **HTTP Client** | Axios | `1.21.1` | Standardized request interceptors for Bearer token injection and error unwrapping. |
-| **Testing** | pytest + httpx | `8.3.4` | Comprehensive test coverage across all 5 development stages, including live multi-threaded concurrency. |
+| **Testing** | pytest + httpx | `8.3.4` | Comprehensive test coverage across all stages, including live multi-threaded concurrency. |
+| **Containerization** | Docker & Compose | `v2+` | Multi-container orchestration (DB, API, Frontend) with automated healthchecks, migrations, and seeding. |
 
 ---
 
@@ -277,7 +278,29 @@ cd snack_app
 
 ---
 
-### Step 2: Backend Setup
+### Option A: One-Command Docker Compose (Fastest & Recommended for Evaluators)
+
+Launch the entire stack (PostgreSQL database, FastAPI backend with auto-migrations and seed, and Next.js frontend) with a single command:
+
+```bash
+docker compose up --build
+```
+
+What this does automatically:
+1. **Database Container (`snack_overflow_db`)**: Starts PostgreSQL 16 on port `5432` with built-in healthchecks.
+2. **Backend Container (`snack_overflow_backend`)**: Waits for PostgreSQL to become healthy, automatically applies Alembic migrations (`alembic upgrade head`), seeds canonical demo snacks and users (`python seed.py`), and starts the FastAPI server on port `8000`.
+3. **Frontend Container (`snack_overflow_frontend`)**: Compiles and starts the Next.js production server on port `3000`.
+
+* Once running, open **`http://localhost:3000`** in your browser.
+* API documentation is live at **`http://localhost:8000/docs`**.
+* To stop all services: `docker compose down -v`
+
+> [!NOTE]
+> `docker compose up` creates its own local PostgreSQL container with seeded demo data — this is separate from the Supabase-hosted database used for local development and production. Running Docker Compose will not affect your Supabase data.
+
+---
+
+### Option B: Manual Local Setup (Python + Node.js)
 
 1. **Create Virtual Environment & Install Dependencies**:
    ```bash

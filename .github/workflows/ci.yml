@@ -96,3 +96,37 @@ jobs:
           npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
+
+  docker-compose-test:
+    name: Docker Compose End-to-End Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build and boot full stack with Docker Compose
+        run: |
+          docker compose up --build -d
+
+      - name: Wait for services to become healthy
+        run: |
+          echo "Waiting for services to become healthy..."
+          for i in {1..45}; do
+            if curl -s http://localhost:8000/health | grep -q '"status":"healthy"'; then
+              echo "Backend is healthy!"
+              break
+            fi
+            echo "Waiting for backend ($i/45)..."
+            sleep 2
+          done
+
+      - name: Verify Backend and Frontend HTTP responses
+        run: |
+          curl -f http://localhost:8000/health
+          curl -f http://localhost:3000
+
+      - name: Tear down Docker Compose stack
+        if: always()
+        run: |
+          docker compose down -v
