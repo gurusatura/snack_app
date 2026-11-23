@@ -191,3 +191,58 @@ def test_login_history_pagination():
         p1_ids = {i["id"] for i in data_page1["items"]}
         p2_ids = {i["id"] for i in data_page2["items"]}
         assert p1_ids.isdisjoint(p2_ids), "Page 1 and Page 2 contain overlapping items"
+
+
+def test_self_registered_user_audit_log_shows_user_info():
+    """
+    Verify that when a user registers via /auth/register:
+    1. A successful login history record is created for the new user.
+    2. Admin viewing GET /login-history sees the registered user's actual name, email, and user_id (NOT 'unregistered').
+    3. When the user logs in via /auth/login, the login history also correctly links to their name and email.
+    """
+    import time
+
+    reg_email = f"test_audit_reg_{int(time.time() * 1000)}@snackoverflow.local"
+    reg_name = "Self Registered Audit Tester"
+    reg_password = "SecurePassword123!"
+
+    # 1. Register new user
+    res_reg = client.post(
+        "/auth/register",
+        json={"name": reg_name, "email": reg_email, "password": reg_password},
+    )
+    assert res_reg.status_code == 201
+    registered_user_id = res_reg.json()["user"]["id"]
+
+    # 2. Admin inspects audit log
+    admin_token = _get_admin_token()
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    res_audit = client.get("/login-history?page=1&limit=20", headers=headers)
+    assert res_audit.status_code == 200
+
+    items = res_audit.json()["items"]
+    reg_item = next((i for i in items if i["attempted_email"] == reg_email.lower()), None)
+    assert reg_item is not None, f"Audit log did not record registration login for {reg_email}"
+    assert reg_item["user_id"] == registered_user_id
+    assert reg_item["user_name"] == reg_name
+    assert reg_item["user_email"] == reg_email.lower()
+    assert reg_item["success"] is True
+
+    # 3. User logs in explicitly via /auth/login
+    res_login = client.post(
+        "/auth/login",
+        json={"email": reg_email, "password": reg_password},
+    )
+    assert res_login.status_code == 200
+
+    # 4. Admin inspects audit log again
+    res_audit_after = client.get("/login-history?page=1&limit=20", headers=headers)
+    assert res_audit_after.status_code == 200
+    new_items = res_audit_after.json()["items"]
+    user_logins = [i for i in new_items if i["attempted_email"] == reg_email.lower()]
+    assert len(user_logins) >= 2
+    for entry in user_logins:
+        assert entry["user_id"] == registered_user_id
+        assert entry["user_name"] == reg_name
+        assert entry["user_email"] == reg_email.lower()
+        assert entry["success"] is True

@@ -131,6 +131,15 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
     try:
         db.add(new_user)
         db.flush()
+
+        # Log initial successful authentication event in login_history
+        log_entry = LoginHistory(
+            user_id=new_user.id,
+            attempted_email=clean_email,
+            success=True,
+        )
+        db.add(log_entry)
+
         user_out = UserOut(
             id=new_user.id,
             name=new_user.name,

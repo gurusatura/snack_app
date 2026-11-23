@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import { Snack, SnackCategory } from "@/types";
+import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Plus, Minus, AlertTriangle, Package, Check, Trash2 } from "lucide-react";
 
 // ---------- Consume Modal ----------
 
@@ -28,65 +31,69 @@ export const ConsumeModal: React.FC<ConsumeModalProps> = ({ snack, onClose, onCo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-900 mb-1">Grab a Snack!</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          How many packets of <span className="font-semibold text-gray-800">{snack.name}</span> are you taking?
-        </p>
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Amount</span>
-              <span>Available: {snack.quantity}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setAmount((a) => Math.max(1, a - 1))}
-                className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 font-bold text-gray-700 flex items-center justify-center"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                min="1"
-                max={Math.max(1, snack.quantity)}
-                value={amount}
-                onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                className="flex-1 text-center font-bold text-lg py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
-              />
-              <button
-                type="button"
-                onClick={() => setAmount((a) => Math.min(snack.quantity, a + 1))}
-                className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 font-bold text-gray-700 flex items-center justify-center"
-              >
-                +
-              </button>
-            </div>
+    <Dialog
+      isOpen={true}
+      onClose={onClose}
+      title="Grab a Snack!"
+      description={`How many packets of ${snack.name} are you taking?`}
+    >
+      <form onSubmit={handleSubmit}>
+        <div className="mb-5 bg-amber-50/50 p-4 rounded-xl border border-amber-900/10">
+          <div className="flex items-center justify-between text-xs text-stone-600 mb-2 font-medium">
+            <span>Packets to take</span>
+            <span className="font-bold text-stone-900">Available: {snack.quantity}</span>
           </div>
-
-          <div className="flex gap-2">
-            <button
+          <div className="flex items-center gap-3">
+            <Button
               type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="flex-1 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              variant="outline"
+              size="icon"
+              onClick={() => setAmount((a) => Math.max(1, a - 1))}
+              className="h-10 w-10 text-stone-700"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || snack.quantity === 0}
-              className="flex-1 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 rounded-xl transition-colors"
+              <Minus className="w-4 h-4" />
+            </Button>
+            <input
+              type="number"
+              min="1"
+              max={Math.max(1, snack.quantity)}
+              value={amount}
+              onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
+              className="flex-1 text-center font-black text-xl py-2 bg-white border border-amber-900/15 rounded-xl text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 shadow-xs"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setAmount((a) => Math.min(snack.quantity, a + 1))}
+              className="h-10 w-10 text-stone-700"
             >
-              {submitting ? "Grabbing..." : "Confirm"}
-            </button>
+              <Plus className="w-4 h-4" />
+            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <div className="flex gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={submitting}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="default"
+            disabled={submitting || snack.quantity === 0}
+            className="flex-1 shadow-xs"
+          >
+            {submitting ? "Grabbing..." : "Confirm Grab"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 };
 
@@ -116,47 +123,49 @@ export const RestockModal: React.FC<RestockModalProps> = ({ snack, onClose, onRe
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-900 mb-1">Restock Pantry</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Add fresh stock for <span className="font-semibold text-gray-800">{snack.name}</span>.
-        </p>
+    <Dialog
+      isOpen={true}
+      onClose={onClose}
+      title="Restock Pantry"
+      description={`Add fresh stock for ${snack.name}.`}
+    >
+      <form onSubmit={handleSubmit}>
+        <div className="mb-5 bg-purple-50/50 p-4 rounded-xl border border-purple-200/60">
+          <label className="block text-xs font-bold text-purple-900 mb-1.5">Packets to Add</label>
+          <input
+            type="number"
+            min="1"
+            max="1000"
+            value={amount}
+            onChange={(e) => setAmount(parseInt(e.target.value) || 0)}
+            className="w-full text-center font-black text-xl py-2 bg-white border border-purple-200 rounded-xl text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500 shadow-xs"
+          />
+          <p className="text-xs text-purple-700/80 mt-2 font-medium">
+            Current: <strong className="text-stone-900">{snack.quantity}</strong> → New:{" "}
+            <strong className="text-purple-900">{snack.quantity + (isNaN(amount) ? 0 : amount)}</strong> packets
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Packets to Add</label>
-            <input
-              type="number"
-              min="1"
-              max="1000"
-              value={amount}
-              onChange={(e) => setAmount(parseInt(e.target.value) || 0)}
-              className="w-full text-center font-bold text-lg py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
-            />
-            <p className="text-xs text-gray-400 mt-1">Current: {snack.quantity} → New: {snack.quantity + amount}</p>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="flex-1 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || amount <= 0}
-              className="flex-1 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 rounded-xl transition-colors"
-            >
-              {submitting ? "Restocking..." : "Restock"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={submitting}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={submitting || amount <= 0}
+            className="flex-1 bg-purple-700 hover:bg-purple-800 text-white shadow-xs"
+          >
+            {submitting ? "Restocking..." : "Restock Pantry"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 };
 
@@ -201,86 +210,89 @@ export const AddEditSnackModal: React.FC<AddEditSnackModalProps> = ({ snack, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{snack ? "Edit Snack" : "Add New Snack"}</h3>
+    <Dialog
+      isOpen={true}
+      onClose={onClose}
+      title={snack ? "Edit Snack Details" : "Add New Snack to Pantry"}
+      description="Configure snack identity, category, and automatic stock alerts."
+    >
+      {error && (
+        <div className="mb-4 p-3 rounded-xl bg-rose-50 text-rose-800 text-xs border border-rose-200 font-medium">
+          {error}
+        </div>
+      )}
 
-        {error && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-800 text-xs border border-red-200">
-            {error}
-          </div>
-        )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-stone-700 mb-1">Snack Name</label>
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Masala Peanuts"
+            className="w-full px-3 py-2 bg-amber-50/40 border border-amber-900/15 rounded-xl text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white"
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-stone-700 mb-1">Category</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as SnackCategory)}
+            className="w-full px-3 py-2 bg-amber-50/40 border border-amber-900/15 rounded-xl text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white cursor-pointer font-medium"
+          >
+            <option value="sweet">Sweet</option>
+            <option value="savoury">Savoury</option>
+            <option value="drink">Drink</option>
+            <option value="healthy-ish">Healthy-ish</option>
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Snack Name</label>
+            <label className="block text-xs font-bold text-stone-700 mb-1">Current Quantity</label>
             <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Masala Peanuts"
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500"
+              type="number"
+              min="0"
+              value={quantity}
+              onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+              className="w-full px-3 py-2 bg-amber-50/40 border border-amber-900/15 rounded-xl text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white"
             />
           </div>
-
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as SnackCategory)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500"
-            >
-              <option value="sweet">Sweet 🍫</option>
-              <option value="savoury">Savoury 🥨</option>
-              <option value="drink">Drink 🧃</option>
-              <option value="healthy-ish">Healthy-ish 🥗</option>
-            </select>
+            <label className="block text-xs font-bold text-stone-700 mb-1">Low-Stock Alert Threshold</label>
+            <input
+              type="number"
+              min="0"
+              value={threshold}
+              onChange={(e) => setThreshold(parseInt(e.target.value) || 0)}
+              className="w-full px-3 py-2 bg-amber-50/40 border border-amber-900/15 rounded-xl text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white"
+            />
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Quantity</label>
-              <input
-                type="number"
-                min="0"
-                value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Low Stock Alert</label>
-              <input
-                type="number"
-                min="0"
-                value={threshold}
-                onChange={(e) => setThreshold(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="flex-1 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 py-2 text-sm font-semibold text-white bg-gray-900 hover:bg-black rounded-xl transition-colors"
-            >
-              {submitting ? "Saving..." : "Save Snack"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex gap-2.5 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={submitting}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="default"
+            disabled={submitting}
+            className="flex-1 shadow-xs"
+          >
+            {submitting ? "Saving..." : "Save Snack"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 };
 
@@ -307,35 +319,40 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({ snack, onClose, onConf
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-gray-100">
-        <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl font-bold mb-3">
-          ⚠
-        </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-1">Delete Snack?</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Are you sure you want to delete <span className="font-semibold text-gray-800">{snack.name}</span>? This action cannot be undone.
+    <Dialog
+      isOpen={true}
+      onClose={onClose}
+      title="Delete Snack?"
+      description={`Are you sure you want to delete "${snack.name}"? This action cannot be undone.`}
+    >
+      <div className="p-4 mb-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+        <p className="text-xs text-rose-800 font-medium">
+          If this snack has activity history, it is preserved for audit safety.
         </p>
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="flex-1 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={submitting}
-            className="flex-1 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-300 rounded-xl transition-colors"
-          >
-            {submitting ? "Deleting..." : "Delete"}
-          </button>
-        </div>
       </div>
-    </div>
+
+      <div className="flex gap-2.5">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={submitting}
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={handleDelete}
+          disabled={submitting}
+          className="flex-1 shadow-xs gap-1.5"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span>{submitting ? "Deleting..." : "Delete Permanently"}</span>
+        </Button>
+      </div>
+    </Dialog>
   );
 };

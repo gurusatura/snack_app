@@ -11,6 +11,8 @@ import { SummaryCards } from "./SummaryCards";
 import { SnackFilters } from "./SnackFilters";
 import { SnackCard } from "./SnackCard";
 import { ConsumeModal, RestockModal, AddEditSnackModal, DeleteModal } from "./Modals";
+import { RotateCw, Sparkles, ArrowRight, Package, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const DashboardView: React.FC = () => {
   const { user, isAdmin } = useAuth();
@@ -266,30 +268,48 @@ export const DashboardView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#FAF6F0] text-[#2B1E16] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        {/* Welcome Header with Personalized Greeting */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              Pantry Overview
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E6F0EE] text-[#16433C] border border-[#16433C]/20 text-[11px] font-bold">
+                <Sparkles className="w-3 h-3 text-[#16433C]" />
+                Live Pantry
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#2B1E16] tracking-tight">
+              Welcome back, {user?.name || "Teammate"}!
             </h2>
-            <p className="text-sm text-gray-500">
-              Live inventory tracking, consumption, and weekly office favourites
+            <p className="text-xs sm:text-sm text-[#6E5D53] mt-0.5">
+              Live office pantry inventory, realtime stock status, and weekly team favourites
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-xs text-gray-400 font-medium">
-              Logged in as <span className="font-bold text-gray-700">{user?.name}</span>
-            </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                fetchSummary(false);
+                fetchSnacks(false);
+              }}
+              disabled={loadingSnacks || loadingSummary}
+              className="gap-1.5 shadow-xs"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${loadingSnacks ? "animate-spin" : ""}`} />
+              <span>Refresh</span>
+            </Button>
+
             {isAdmin && (
-              <Link
-                href="/activity"
-                className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1"
-              >
-                <span>Activity Log →</span>
+              <Link href="/activity">
+                <Button variant="secondary" size="sm" className="gap-1.5 font-bold">
+                  <span>Activity Log</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
               </Link>
             )}
           </div>
@@ -332,28 +352,30 @@ export const DashboardView: React.FC = () => {
         {loadingSnacks && snacks.length === 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="h-56 bg-gray-200/70 rounded-2xl animate-pulse" />
+              <div key={i} className="h-64 bg-amber-100/30 rounded-2xl animate-pulse border border-amber-900/5" />
             ))}
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-md mx-auto my-12">
-            <p className="text-red-800 text-sm font-semibold mb-3">{error}</p>
-            <button
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-8 text-center max-w-md mx-auto my-12">
+            <AlertCircle className="w-8 h-8 text-rose-600 mx-auto mb-2" />
+            <p className="text-rose-800 text-xs font-semibold mb-3">{error}</p>
+            <Button
               onClick={() => fetchSnacks(false)}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors"
+              variant="destructive"
+              size="sm"
             >
               Retry
-            </button>
+            </Button>
           </div>
         ) : snacks.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-3xl p-12 text-center max-w-md mx-auto my-8 shadow-xs">
-            <div className="text-4xl mb-3">🔍</div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">No snacks found</h3>
-            <p className="text-xs text-gray-500 mb-4">
+          <div className="bg-[#FFFDF9] border border-amber-900/10 rounded-3xl p-12 text-center max-w-md mx-auto my-8 shadow-xs">
+            <Package className="w-12 h-12 text-amber-500/80 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-stone-900 mb-1">No snacks found</h3>
+            <p className="text-xs text-stone-500 mb-4">
               Try adjusting your search terms or filter selections.
             </p>
             {(search || category || status || sort) && (
-              <button
+              <Button
                 onClick={() => {
                   setSearch("");
                   setCategory("");
@@ -361,10 +383,11 @@ export const DashboardView: React.FC = () => {
                   setSort("");
                   setPage(1);
                 }}
-                className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors"
+                variant="outline"
+                size="sm"
               >
                 Clear all filters
-              </button>
+              </Button>
             )}
           </div>
         ) : (
@@ -386,24 +409,26 @@ export const DashboardView: React.FC = () => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-4 text-sm">
-                <button
+              <div className="mt-8 flex items-center justify-between border-t border-amber-900/10 pt-4 text-sm">
+                <Button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-700 transition-colors"
+                  variant="outline"
+                  size="sm"
                 >
                   ← Previous
-                </button>
-                <span className="text-xs text-gray-500 font-semibold">
-                  Page {page} of {totalPages} ({total} snacks)
+                </Button>
+                <span className="text-xs text-stone-500 font-semibold">
+                  Page <strong className="text-stone-800">{page}</strong> of <strong className="text-stone-800">{totalPages}</strong> ({total} snacks)
                 </span>
-                <button
+                <Button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-700 transition-colors"
+                  variant="outline"
+                  size="sm"
                 >
                   Next →
-                </button>
+                </Button>
               </div>
             )}
           </>

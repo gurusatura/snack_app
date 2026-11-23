@@ -7,6 +7,10 @@ import { useAuth } from "@/context/AuthContext";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { ActivityItem, ActivityListResponse } from "@/types";
 import { Navbar } from "@/components/Navbar";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Clock, RotateCw, ArrowLeft, ShieldAlert, Package, Layers } from "lucide-react";
 
 export default function ActivityPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -49,8 +53,8 @@ export default function ActivityPage() {
   // Auth loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#C2410C] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -58,24 +62,23 @@ export default function ActivityPage() {
   // Non-admin forbidden state
   if (user && !isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-[#FAF6F0] text-[#2B1E16] flex flex-col">
         <Navbar />
         <main className="flex-1 max-w-xl mx-auto px-4 py-16 text-center">
-          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xs">
+          <Card className="p-8 shadow-xs border-[#E6DFD3] text-center bg-[#FFFDF9]">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-bold text-xl">
-              !
+              <ShieldAlert className="w-6 h-6" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Admin Access Required</h2>
-            <p className="text-sm text-gray-500 mb-6">
+            <h2 className="text-xl font-bold text-[#2B1E16] mb-2">Admin Access Required</h2>
+            <p className="text-sm text-[#6E5D53] mb-6">
               The pantry activity audit log is restricted to administrative staff only.
             </p>
-            <Link
-              href="/"
-              className="inline-flex items-center px-4 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-colors"
-            >
-              ← Return to Pantry
+            <Link href="/">
+              <Button variant="default" size="sm">
+                ← Return to Pantry
+              </Button>
             </Link>
-          </div>
+          </Card>
         </main>
       </div>
     );
@@ -97,38 +100,42 @@ export default function ActivityPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#FAF6F0] text-[#2B1E16] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Breadcrumb / Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1.5">
               <Link
                 href="/"
-                className="text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#6E5D53] hover:text-[#2B1E16] transition-colors"
               >
-                ← Back to Pantry
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Pantry</span>
               </Link>
             </div>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              Activity Audit Log
+            <h2 className="text-2xl font-black text-[#2B1E16] tracking-tight flex items-center gap-2">
+              <Clock className="w-6 h-6 text-[#16433C]" />
+              <span>Activity Audit Log</span>
             </h2>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[#6E5D53] mt-0.5">
               Chronological log of all snack consumption and restock operations
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fetchActivities(page)}
               disabled={loading}
-              className="px-3 py-1.5 bg-white border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center gap-1.5"
+              className="gap-1.5 shadow-xs"
             >
-              <span className={loading ? "animate-spin" : ""}>↻</span>
+              <RotateCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               <span>Refresh</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -140,10 +147,10 @@ export default function ActivityPage() {
         )}
 
         {/* Main Content Table Card */}
-        <div className="bg-white border border-gray-200/90 rounded-2xl shadow-xs overflow-hidden">
+        <Card className="shadow-xs overflow-hidden border-[#E6DFD3] bg-[#FFFDF9]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50/80 border-b border-gray-200/80 text-gray-500 uppercase font-bold tracking-wider text-[11px]">
+              <thead className="bg-[#FAF6F0] border-b border-[#E6DFD3] text-[#6E5D53] uppercase font-bold tracking-wider text-[11px]">
                 <tr>
                   <th scope="col" className="px-5 py-3.5">
                     Timestamp
@@ -162,32 +169,32 @@ export default function ActivityPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[#E6DFD3]/60">
                 {loading ? (
                   // Skeleton rows
                   [1, 2, 3, 4, 5, 6].map((i) => (
                     <tr key={i} className="animate-pulse">
                       <td className="px-5 py-4">
-                        <div className="h-3 bg-gray-200 rounded-md w-28" />
+                        <div className="h-3 bg-[#EFEAE1] rounded-md w-28" />
                       </td>
                       <td className="px-5 py-4">
-                        <div className="h-3 bg-gray-200 rounded-md w-32 mb-1" />
-                        <div className="h-2.5 bg-gray-100 rounded-md w-24" />
+                        <div className="h-3 bg-[#EFEAE1] rounded-md w-32 mb-1" />
+                        <div className="h-2.5 bg-[#EFEAE1]/70 rounded-md w-24" />
                       </td>
                       <td className="px-5 py-4">
-                        <div className="h-5 bg-gray-200 rounded-md w-16" />
+                        <div className="h-5 bg-[#EFEAE1] rounded-md w-16" />
                       </td>
                       <td className="px-5 py-4">
-                        <div className="h-3 bg-gray-200 rounded-md w-36" />
+                        <div className="h-3 bg-[#EFEAE1] rounded-md w-36" />
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <div className="h-3 bg-gray-200 rounded-md w-12 ml-auto" />
+                        <div className="h-3 bg-[#EFEAE1] rounded-md w-12 ml-auto" />
                       </td>
                     </tr>
                   ))
                 ) : activities.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-gray-400">
+                    <td colSpan={5} className="px-5 py-12 text-center text-[#6E5D53]">
                       No activity recorded in the pantry yet.
                     </td>
                   </tr>
@@ -195,30 +202,27 @@ export default function ActivityPage() {
                   activities.map((item) => {
                     const isRestock = item.action === "restocked";
                     return (
-                      <tr key={item.id} className="hover:bg-gray-50/60 transition-colors">
-                        <td className="px-5 py-3.5 text-gray-500 font-mono text-[11px] whitespace-nowrap">
+                      <tr key={item.id} className="hover:bg-[#FAF6F0]/60 transition-colors">
+                        <td className="px-5 py-3.5 text-[#6E5D53] font-mono text-[11px] whitespace-nowrap">
                           {formatTimestamp(item.created_at)}
                         </td>
                         <td className="px-5 py-3.5">
-                          <div className="font-semibold text-gray-900">{item.user_name}</div>
-                          <div className="text-[11px] text-gray-400">{item.user_email}</div>
+                          <div className="font-semibold text-[#2B1E16]">{item.user_name}</div>
+                          <div className="text-[11px] text-[#6E5D53] font-mono">{item.user_email}</div>
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
-                              isRestock
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-amber-50 text-amber-800 border border-amber-200"
-                            }`}
+                          <Badge
+                            variant={isRestock ? "secondary" : "mustard"}
+                            className="text-[10px] uppercase font-bold tracking-wider"
                           >
                             {isRestock ? "+ Restocked" : "− Grabbed"}
-                          </span>
+                          </Badge>
                         </td>
-                        <td className="px-5 py-3.5 font-medium text-gray-900">
+                        <td className="px-5 py-3.5 font-bold text-[#2B1E16]">
                           {item.snack_name}
                         </td>
                         <td className="px-5 py-3.5 text-right font-mono font-bold text-xs whitespace-nowrap">
-                          <span className={isRestock ? "text-emerald-700" : "text-gray-900"}>
+                          <span className={isRestock ? "text-[#16433C]" : "text-[#2B1E16]"}>
                             {isRestock ? `+${item.amount}` : `−${item.amount}`}
                           </span>
                         </td>
@@ -232,31 +236,33 @@ export default function ActivityPage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+            <div className="px-5 py-3.5 border-t border-[#E6DFD3] flex items-center justify-between text-xs text-[#6E5D53]">
               <div>
-                Showing page <span className="font-semibold text-gray-800">{page}</span> of{" "}
-                <span className="font-semibold text-gray-800">{totalPages}</span>{" "}
-                <span className="text-gray-400">({total} total events)</span>
+                Showing page <strong className="font-bold text-[#2B1E16]">{page}</strong> of{" "}
+                <strong className="font-bold text-[#2B1E16]">{totalPages}</strong>{" "}
+                <span className="text-[#6E5D53]">({total} total events)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1 || loading}
-                  className="px-3 py-1 bg-white border border-gray-200 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg font-medium text-gray-700 transition-colors"
                 >
                   Previous
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages || loading}
-                  className="px-3 py-1 bg-white border border-gray-200 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg font-medium text-gray-700 transition-colors"
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           )}
-        </div>
+        </Card>
       </main>
     </div>
   );

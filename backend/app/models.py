@@ -49,6 +49,7 @@ class User(Base):
     # Relationships
     votes = relationship("Vote", back_populates="user", cascade="all, delete-orphan")
     activities = relationship("Activity", back_populates="user")
+    login_histories = relationship("LoginHistory", back_populates="user")
 
 
 class Snack(Base):
@@ -163,4 +164,4 @@ class LoginHistory(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
 
     # Relationships
-    user = relationship("User")
+    user = relationship("User", back_populates="login_histories")

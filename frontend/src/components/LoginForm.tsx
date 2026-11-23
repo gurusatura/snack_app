@@ -3,6 +3,10 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Cookie, Shield, User, Mail, Lock, Sparkles, ArrowRight, ArrowLeft, AlertCircle } from "lucide-react";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -48,143 +52,175 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 sm:p-8 bg-white rounded-3xl shadow-xl border border-gray-100">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-white text-3xl shadow-md">
-          🍿
+    <Card className="w-full max-w-md mx-auto shadow-sm border-[#E6DFD3] bg-[#FFFDF9]">
+      <CardHeader className="text-center pb-4">
+        {/* Deep forest teal brand container */}
+        <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-[#16433C] flex items-center justify-center text-[#FAF6F0] shadow-xs">
+          <Cookie className="w-9 h-9" />
         </div>
-        <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Snack Overflow</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <CardTitle className="text-2xl font-black text-[#2B1E16] tracking-tight">
+          Snack Overflow
+        </CardTitle>
+        <CardDescription className="text-xs text-[#6E5D53]">
           {mode === "login"
             ? "Sign in to track and grab pantry snacks"
             : "Create your member account to start snacking"}
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      {mode === "register" && (
-        <div className="mb-5 p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs flex items-center gap-2">
-          <span className="text-base">ℹ️</span>
-          <span>
-            <strong>Member Registration:</strong> Public sign-up provides Member access only. Admin roles cannot be self-assigned.
-          </span>
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
-          <span className="font-bold text-sm">✕</span>
-          <span>{error}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent className="pt-0">
         {mode === "register" && (
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Full Name
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Alex Johnson"
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
-            />
+          <div className="mb-4 p-3 rounded-xl bg-[#E6F0EE] border border-[#16433C]/20 text-[#16433C] text-xs flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#16433C] shrink-0" />
+            <span>
+              <strong>Member Registration:</strong> Public sign-up provides Member access only. Admin roles cannot be self-assigned.
+            </span>
           </div>
         )}
 
-        <div>
-          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-            Email Address
-          </label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com"
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-            Password
-          </label>
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••••••"
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
-          />
-          {mode === "register" && (
-            <p className="text-[11px] text-gray-400 mt-1">Minimum 6 characters</p>
-          )}
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 px-4 bg-gray-900 hover:bg-black text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-lg disabled:bg-gray-400 mt-2"
-        >
-          {loading
-            ? mode === "login"
-              ? "Signing in..."
-              : "Creating account..."
-            : mode === "login"
-            ? "Sign In"
-            : "Create Account"}
-        </button>
-      </form>
-
-      {/* Switch between Sign In and Register */}
-      <div className="mt-4 text-center">
-        <button
-          type="button"
-          onClick={toggleMode}
-          className="text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors"
-        >
-          {mode === "login"
-            ? "New teammate? Create a free account →"
-            : "← Already have an account? Sign in"}
-        </button>
-      </div>
-
-      {/* Quick Demo Login Buttons for Evaluators (Shown in login mode) */}
-      {mode === "login" && (
-        <div className="mt-8 pt-6 border-t border-gray-100">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-center mb-3">
-            Quick Demo Accounts (Evaluation)
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("admin@snackoverflow.local", "AdminPassword123!")}
-              className="px-2.5 py-2 text-xs font-medium rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors border border-purple-200 text-center"
-            >
-              👑 Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("member1@snackoverflow.local", "Member1Password123!")}
-              className="px-2.5 py-2 text-xs font-medium rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200 text-center"
-            >
-              👤 Member 1
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("member2@snackoverflow.local", "Member2Password123!")}
-              className="px-2.5 py-2 text-xs font-medium rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200 text-center"
-            >
-              👤 Member 2
-            </button>
+        {error && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2 font-medium">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+            <span>{error}</span>
           </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {mode === "register" && (
+            <div>
+              <label className="block text-[11px] font-bold text-[#2B1E16] uppercase tracking-wider mb-1">
+                Full Name
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Alex Johnson"
+                  className="w-full pl-9 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl text-xs text-[#2B1E16] focus:outline-hidden focus:ring-2 focus:ring-[#C2410C] focus:bg-white transition-all"
+                />
+                <User className="w-4 h-4 text-[#6E5D53]/60 absolute left-3 top-3 pointer-events-none" />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-[11px] font-bold text-[#2B1E16] uppercase tracking-wider mb-1">
+              Email Address
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                className="w-full pl-9 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl text-xs text-[#2B1E16] focus:outline-hidden focus:ring-2 focus:ring-[#C2410C] focus:bg-white transition-all font-mono"
+              />
+              <Mail className="w-4 h-4 text-[#6E5D53]/60 absolute left-3 top-3 pointer-events-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-[#2B1E16] uppercase tracking-wider mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                className="w-full pl-9 pr-4 py-2.5 bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl text-xs text-[#2B1E16] focus:outline-hidden focus:ring-2 focus:ring-[#C2410C] focus:bg-white transition-all"
+              />
+              <Lock className="w-4 h-4 text-[#6E5D53]/60 absolute left-3 top-3 pointer-events-none" />
+            </div>
+            {mode === "register" && (
+              <p className="text-[11px] text-[#6E5D53] mt-1">Minimum 6 characters</p>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading}
+            variant="default"
+            className="w-full h-11 text-sm font-bold shadow-xs mt-2"
+          >
+            {loading
+              ? mode === "login"
+                ? "Signing in..."
+                : "Creating account..."
+              : mode === "login"
+              ? "Sign In"
+              : "Create Account"}
+          </Button>
+        </form>
+
+        {/* Switch between Sign In and Register */}
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={toggleMode}
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#C2410C] hover:text-[#9A3412] hover:underline transition-colors cursor-pointer"
+          >
+            {mode === "login" ? (
+              <>
+                <span>New teammate? Create a free account</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              <>
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Already have an account? Sign in</span>
+              </>
+            )}
+          </button>
         </div>
-      )}
-    </div>
+
+        {/* Quick Demo Login Buttons for Evaluators (Shown in login mode) */}
+        {mode === "login" && (
+          <div className="mt-6 pt-5 border-t border-[#E6DFD3]">
+            <p className="text-[10px] font-bold text-[#6E5D53] uppercase tracking-wider text-center mb-2.5">
+              Quick Demo Accounts (Evaluation)
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickLogin("admin@snackoverflow.local", "AdminPassword123!")}
+                className="bg-[#EFEAE1] hover:bg-[#E2DAD0] text-[#3D261D] border-[#3D261D]/20 text-xs gap-1"
+              >
+                <Shield className="w-3 h-3 text-[#3D261D]" />
+                <span>Admin</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickLogin("member1@snackoverflow.local", "Member1Password123!")}
+                className="bg-[#E6F0EE] hover:bg-[#D4E6E3] text-[#16433C] border-[#16433C]/20 text-xs gap-1"
+              >
+                <User className="w-3 h-3 text-[#16433C]" />
+                <span>Member 1</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuickLogin("member2@snackoverflow.local", "Member2Password123!")}
+                className="bg-[#E6F0EE] hover:bg-[#D4E6E3] text-[#16433C] border-[#16433C]/20 text-xs gap-1"
+              >
+                <User className="w-3 h-3 text-[#16433C]" />
+                <span>Member 2</span>
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };

@@ -2,6 +2,7 @@ from datetime import datetime
 import math
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
@@ -27,14 +28,23 @@ def list_login_history(
     query = (
         db.query(
             LoginHistory.id,
-            LoginHistory.user_id,
+            func.coalesce(LoginHistory.user_id, User.id).label("user_id"),
             User.name.label("user_name"),
             User.email.label("user_email"),
             LoginHistory.attempted_email,
             LoginHistory.success,
             LoginHistory.timestamp,
         )
-        .outerjoin(User, User.id == LoginHistory.user_id)
+        .outerjoin(
+            User,
+            or_(
+                User.id == LoginHistory.user_id,
+                and_(
+                    LoginHistory.user_id.is_(None),
+                    func.lower(User.email) == func.lower(LoginHistory.attempted_email),
+                ),
+            ),
+        )
     )
 
     total = query.count()
