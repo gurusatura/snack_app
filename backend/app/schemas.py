@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from app.models import SnackCategory
 
 
@@ -9,6 +9,12 @@ from app.models import SnackCategory
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+class RegisterRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, description="User full name")
+    email: str = Field(..., pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", description="User email address")
+    password: str = Field(..., min_length=6, max_length=128, description="User password (min 6 characters)")
 
 
 class UserOut(BaseModel):

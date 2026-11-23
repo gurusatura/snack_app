@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 1440
 
     # CORS
-    CORS_ORIGIN: str = "http://localhost:3000"
+    CORS_ORIGIN: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     # Seed credentials
     SEED_ADMIN_EMAIL: str = "admin@snackoverflow.local"

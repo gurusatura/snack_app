@@ -136,3 +136,17 @@ class Activity(Base):
     # Relationships
     user = relationship("User", back_populates="activities")
     snack = relationship("Snack", back_populates="activities")
+
+
+class IdempotencyKey(Base):
+    __tablename__ = "idempotency_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(255), unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    status_code = Column(Integer, nullable=False)
+    response_body = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
+
+    # Relationships
+    user = relationship("User")

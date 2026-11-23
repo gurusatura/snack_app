@@ -98,7 +98,20 @@ export const DashboardView: React.FC = () => {
   const handleConsume = async (amount: number) => {
     if (!consumingSnack) return;
     try {
-      const res = await api.post(`/snacks/${consumingSnack.id}/consume`, { amount });
+      const idempotencyKey =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `consume-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      const res = await api.post(
+        `/snacks/${consumingSnack.id}/consume`,
+        { amount },
+        {
+          headers: {
+            "Idempotency-Key": idempotencyKey,
+          },
+        }
+      );
       const newQty = res.data.remaining_quantity;
       const newStatus: SnackStatus =
         newQty === 0

@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -28,11 +28,24 @@ api.interceptors.request.use((config) => {
 });
 
 export const getApiErrorMessage = (error: unknown, fallback: string = "An unexpected error occurred"): string => {
-  if (axios.isAxiosError(error)) {
-    const axiosErr = error as AxiosError<ApiError>;
-    if (axiosErr.response?.data?.error?.message) {
-      return axiosErr.response.data.error.message;
-    }
+  const err = error as any;
+  if (err?.response?.data?.error?.message) {
+    return err.response.data.error.message;
+  }
+  if (err?.response?.data?.detail?.error?.message) {
+    return err.response.data.detail.error.message;
+  }
+  if (typeof err?.response?.data?.detail === "string") {
+    return err.response.data.detail;
+  }
+  if (err?.code === "ECONNABORTED" || err?.message?.includes("timeout")) {
+    return "Connection timed out due to network latency. Please try signing in.";
+  }
+  if (err?.message === "Network Error" || err?.code === "ERR_NETWORK") {
+    return "Cannot reach the backend server. Please verify the backend is running on http://localhost:8000.";
+  }
+  if (err?.message && typeof err.message === "string" && !err.message.includes("status code")) {
+    return err.message;
   }
   return fallback;
 };

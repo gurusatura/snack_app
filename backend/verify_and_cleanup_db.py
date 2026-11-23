@@ -39,6 +39,23 @@ def check_and_clean():
         for s in remaining:
             print(f"  [ID {s.id}] {s.name} | Category: {s.category.value} | Quantity: {s.quantity} | Threshold: {s.low_stock_threshold} | Status: {s.status}")
 
+        canonical_emails = {
+            "admin@snackoverflow.local",
+            "member1@snackoverflow.local",
+            "member2@snackoverflow.local",
+        }
+
+        non_canonical_users = [u for u in db.query(User).all() if u.email not in canonical_emails]
+        if non_canonical_users:
+            print(f"Found {len(non_canonical_users)} non-canonical test users:")
+            for u in non_canonical_users:
+                print(f"  - Purging test user [ID {u.id}] {u.name} ({u.email})")
+                db.query(Activity).filter(Activity.user_id == u.id).delete(synchronize_session=False)
+                db.query(Vote).filter(Vote.user_id == u.id).delete(synchronize_session=False)
+                db.delete(u)
+            db.commit()
+            print("Purged non-canonical users successfully.")
+
         users = db.query(User).all()
         print(f"\nTotal users in DB: {len(users)}")
         for u in users:

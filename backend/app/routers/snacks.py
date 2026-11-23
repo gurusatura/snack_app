@@ -1,15 +1,17 @@
 from datetime import datetime, timedelta, timezone
+import json
 import math
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import and_, case, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user, require_admin
 from app.database import get_db
-from app.models import Activity, ActivityAction, Snack, SnackCategory, User, Vote
+from app.models import Activity, ActivityAction, IdempotencyKey, Snack, SnackCategory, User, Vote
 from app.schemas import (
     AmountActionRequest,
     SnackCreate,
@@ -338,17 +340,40 @@ def delete_snack(
 def consume_snack(
     snack_id: int,
     body: AmountActionRequest,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Atomic consumption:
-    1. Check snack existence (SELECT id FROM snacks WHERE id=:id) -> 404 if not found.
-    2. Atomic UPDATE (UPDATE snacks SET quantity = quantity - :amount WHERE id=:id AND quantity >= :amount RETURNING quantity).
+    Atomic consumption with optional Idempotency-Key support:
+    1. If Idempotency-Key is provided, check for a cached response within the last 24 hours.
+       If found, return the exact cached response without re-processing or deducting stock again.
+    2. Check snack existence -> 404 if not found.
+    3. Atomic UPDATE (UPDATE snacks SET quantity = quantity - :amount WHERE id=:id AND quantity >= :amount RETURNING quantity).
        -> 409 INSUFFICIENT_STOCK if 0 rows affected.
-    3. Insert activity record in the SAME transaction.
+    4. Insert activity record in the SAME transaction.
+    5. If Idempotency-Key is provided, store the result in idempotency_keys table.
     """
-    # Query 1: Check existence
+    clean_key = idempotency_key.strip() if idempotency_key else None
+
+    # Step 1: Idempotency check (within 24-hour window)
+    if clean_key:
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        cached_entry = (
+            db.query(IdempotencyKey)
+            .filter(
+                IdempotencyKey.key == clean_key,
+                IdempotencyKey.created_at >= cutoff,
+            )
+            .first()
+        )
+        if cached_entry:
+            return JSONResponse(
+                status_code=cached_entry.status_code,
+                content=json.loads(cached_entry.response_body),
+            )
+
+    # Step 2: Check existence
     existence = db.execute(text("SELECT id FROM snacks WHERE id = :id"), {"id": snack_id}).fetchone()
     if not existence:
         raise HTTPException(
@@ -356,7 +381,7 @@ def consume_snack(
             detail={"error": {"code": "SNACK_NOT_FOUND", "message": "Snack not found."}},
         )
 
-    # Query 2: Atomic update with RETURNING
+    # Step 3: Atomic update with RETURNING
     result = db.execute(
         text(
             "UPDATE snacks SET quantity = quantity - :amount "
@@ -380,7 +405,7 @@ def consume_snack(
 
     new_quantity = row[0]
 
-    # Query 3 (in same transaction): Record activity
+    # Step 4: Record activity in same transaction
     activity = Activity(
         user_id=current_user.id,
         snack_id=snack_id,
@@ -388,13 +413,37 @@ def consume_snack(
         amount=body.amount,
     )
     db.add(activity)
-    db.commit()
 
-    return {
+    response_data = {
         "snack_id": snack_id,
         "amount_consumed": body.amount,
         "remaining_quantity": new_quantity,
     }
+
+    # Step 5: Store idempotency key if provided
+    if clean_key:
+        idemp_record = IdempotencyKey(
+            key=clean_key,
+            user_id=current_user.id,
+            status_code=200,
+            response_body=json.dumps(response_data),
+        )
+        db.add(idemp_record)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if clean_key:
+            cached_retry = db.query(IdempotencyKey).filter(IdempotencyKey.key == clean_key).first()
+            if cached_retry:
+                return JSONResponse(
+                    status_code=cached_retry.status_code,
+                    content=json.loads(cached_retry.response_body),
+                )
+        raise
+
+    return response_data
 
 
 # -------------------------------------------------------------

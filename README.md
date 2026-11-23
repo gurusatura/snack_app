@@ -169,6 +169,21 @@ In [test_stage4.py](backend/tests/test_stage4.py) (`test_concurrency_real_server
 
 ---
 
+## ⚡ Distributed Idempotency (`Idempotency-Key`)
+
+To eliminate double-spend / double-deduction risks from network retries, double-clicking, or client re-transmissions:
+
+1. **Header Support**: `POST /snacks/{id}/consume` accepts an optional `Idempotency-Key` header (e.g. UUIDv4 generated client-side).
+2. **24-Hour Cache Window**: If a key was processed within the last 24 hours, the backend returns the exact cached JSON response and status code without re-executing stock deduction.
+3. **Concurrent Deduplication**: The `idempotency_keys` table enforces a `UNIQUE(key)` constraint. Concurrent duplicate requests attempting to process simultaneously hit this constraint during transaction commit, triggering an automatic rollback of the duplicate stock deduction and returning the first transaction's cached response.
+4. **Verified via Tests**:
+   - Same key sent sequentially returns identical response and deducts stock only once.
+   - Different keys process independently and each deducts stock separately.
+   - Missing header functions normally without blocking.
+   - 6 concurrent threads firing with the exact same key deduct stock exactly once.
+
+---
+
 ## 🛡️ Security & Role-Based Access Control (RBAC)
 
 1. **Algorithm Confusion Protection**:
@@ -193,6 +208,7 @@ In [test_stage4.py](backend/tests/test_stage4.py) (`test_concurrency_real_server
 erDiagram
     users ||--o{ votes : "casts (CASCADE)"
     users ||--o{ activity : "performs (RESTRICT)"
+    users ||--o{ idempotency_keys : "issues (CASCADE)"
     snacks ||--o{ votes : "receives (CASCADE)"
     snacks ||--o{ activity : "logs (RESTRICT)"
 
@@ -229,6 +245,15 @@ erDiagram
         int amount "CHECK > 0"
         timestamp created_at
     }
+
+    idempotency_keys {
+        int id PK
+        string key UK
+        int user_id FK
+        int status_code
+        string response_body
+        timestamp created_at
+    }
 ```
 
 ### Derived Stock Status (Computed Dynamically)
@@ -246,11 +271,12 @@ All protected endpoints require an `Authorization: Bearer <token>` header.
 | Method | Endpoint | Access Level | Description | Status Codes |
 | :--- | :--- | :--- | :--- | :--- |
 | `POST` | `/auth/login` | Public | Authenticate user, return JWT token & user info | `200`, `401`, `422` |
+| `POST` | `/auth/register` | Public | Register new member account (enforces member role & email uniqueness) | `201`, `409`, `422` |
 | `GET` | `/health` | Public | API health check and operational status | `200` |
 | `GET` | `/snacks` | Member+ | List snacks with SQL search, category, and status filters | `200`, `401` |
 | `GET` | `/snacks/summary` | Member+ | Inventory counts (stocked/low/gone) & Snack of the Week | `200`, `401` |
 | `GET` | `/snacks/{id}` | Member+ | Retrieve single snack details | `200`, `401`, `404` |
-| `POST` | `/snacks/{id}/consume` | Member+ | Atomically consume 1+ packets (Single atomic `UPDATE ... RETURNING`) | `200`, `401`, `409`, `422` |
+| `POST` | `/snacks/{id}/consume` | Member+ | Atomically consume 1+ packets (Atomic `UPDATE ... RETURNING` with optional `Idempotency-Key` header) | `200`, `401`, `409`, `422` |
 | `POST` | `/snacks/{id}/vote` | Member+ | Vote for a snack as office favourite | `201`, `401`, `404`, `409` |
 | `DELETE`| `/snacks/{id}/vote` | Member+ | Remove previous vote for a snack | `200`, `401`, `404` |
 | `POST` | `/snacks` | **Admin Only** | Add a new snack to pantry inventory | `201`, `401`, `403`, `409`, `422` |
@@ -380,17 +406,18 @@ From the `backend` folder with your virtual environment active:
 ```bash
 pytest -v
 ```
-**Test Results (39 tests across 6 modules)**:
+**Test Results (46 tests across 7 modules)**:
 - `test_scaffold.py`: Health endpoint and strict CORS origin enforcement.
 - `test_stage2.py`: Model hashing, seed integrity, derived statuses, database CHECK constraints, UNIQUE constraints, FK CASCADE and RESTRICT.
 - `test_stage3.py`: Authentication, invalid credentials, JWT expiry, signature tampering, algorithm-confusion attack prevention, role-from-DB verification.
 - `test_stage4.py`: Snack listing, multi-factor search/filtering, pagination, admin CRUD, consumption, restocking, voting, Snack of the Week calculation, and live 10-thread Uvicorn concurrency.
 - `test_activity.py`: Admin audit log access control (`403` for members, `200` for admin), table joins, pagination, and sorting.
 - `test_stage7_sorting.py`: SQL-level sorting (name ascending/descending, quantity ascending/descending, vote popularity via subquery), combined filter/search/sort integration, and pagination.
+- `test_stage10_register.py`: Public member signup, strict role assignment (privilege escalation prevention against admin injections), case-insensitive email uniqueness, validation, and login preservation.
 
 ### Continuous Integration (GitHub Actions)
 Every `push` and `pull_request` to `main` automatically triggers [.github/workflows/ci.yml](.github/workflows/ci.yml):
-1. **Backend Matrix**: Spins up an isolated `postgres:16-alpine` service container, executes Alembic migrations, runs database seeding, and executes the complete 39-test pytest suite (including live multi-threaded concurrency verification).
+1. **Backend Matrix**: Spins up an isolated `postgres:16-alpine` service container, executes Alembic migrations, runs database seeding, and executes the complete 46-test pytest suite (including live multi-threaded concurrency verification).
 2. **Frontend Matrix**: Sets up Node.js 20, validates dependencies, runs TypeScript checks, and builds the Next.js production bundle.
 
 ### Running End-to-End User Simulation QA
