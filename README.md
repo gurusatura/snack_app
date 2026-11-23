@@ -280,7 +280,7 @@ All protected endpoints require an `Authorization: Bearer <token>` header.
 | Method | Endpoint | Access Level | Description | Status Codes |
 | :--- | :--- | :--- | :--- | :--- |
 | `POST` | `/auth/login` | Public | Authenticate user, return JWT token & user info | `200`, `401`, `422` |
-| `POST` | `/auth/register` | Public | Register new member account (enforces member role & email uniqueness) | `201`, `409`, `422` |
+| `POST` | `/auth/register` | Public | Register new member account (enforces member role & email uniqueness; rejects admin self-assignment with 403) | `201`, `403`, `409`, `422` |
 | `GET` | `/health` | Public | API health check and operational status | `200` |
 | `GET` | `/snacks` | Member+ | List snacks with SQL search, category, and status filters | `200`, `401` |
 | `GET` | `/snacks/summary` | Member+ | Inventory counts (stocked/low/gone) & Snack of the Week | `200`, `401` |
@@ -416,18 +416,20 @@ From the `backend` folder with your virtual environment active:
 ```bash
 pytest -v
 ```
-**Test Results (46 tests across 7 modules)**:
+**Test Results (57 tests across 9 modules)**:
 - `test_scaffold.py`: Health endpoint and strict CORS origin enforcement.
 - `test_stage2.py`: Model hashing, seed integrity, derived statuses, database CHECK constraints, UNIQUE constraints, FK CASCADE and RESTRICT.
 - `test_stage3.py`: Authentication, invalid credentials, JWT expiry, signature tampering, algorithm-confusion attack prevention, role-from-DB verification.
 - `test_stage4.py`: Snack listing, multi-factor search/filtering, pagination, admin CRUD, consumption, restocking, voting, Snack of the Week calculation, and live 10-thread Uvicorn concurrency.
 - `test_activity.py`: Admin audit log access control (`403` for members, `200` for admin), table joins, pagination, and sorting.
 - `test_stage7_sorting.py`: SQL-level sorting (name ascending/descending, quantity ascending/descending, vote popularity via subquery), combined filter/search/sort integration, and pagination.
-- `test_stage10_register.py`: Public member signup, strict role assignment (privilege escalation prevention against admin injections), case-insensitive email uniqueness, validation, and login preservation.
+- `test_stage10_register.py`: Public member signup, strict role assignment (privilege escalation prevention returning HTTP 403 `ADMIN_REGISTRATION_PROHIBITED` against admin injections), case-insensitive email uniqueness, validation, and login preservation.
+- `test_stage11_idempotency.py`: Distributed `Idempotency-Key` header support, 24-hour cache replay, single-deduction guarantees, optional header compatibility, and concurrent duplicate request deduplication.
+- `test_stage12_login_audit.py`: Security login audit logging for success/failure attempts, anonymous login tracking, admin-only access (`403` for members), and pagination.
 
 ### Continuous Integration (GitHub Actions)
 Every `push` and `pull_request` to `main` automatically triggers [.github/workflows/ci.yml](.github/workflows/ci.yml):
-1. **Backend Matrix**: Spins up an isolated `postgres:16-alpine` service container, executes Alembic migrations, runs database seeding, and executes the complete 46-test pytest suite (including live multi-threaded concurrency verification).
+1. **Backend Matrix**: Spins up an isolated `postgres:16-alpine` service container, executes Alembic migrations, runs database seeding, and executes the complete 57-test pytest suite (including live multi-threaded concurrency verification).
 2. **Frontend Matrix**: Sets up Node.js 20, validates dependencies, runs TypeScript checks, and builds the Next.js production bundle.
 
 ### Running End-to-End User Simulation QA
