@@ -425,11 +425,12 @@ def test_concurrency_real_server_supabase(admin_token, member_token):
     # 2. Start uvicorn live server in background subprocess
     port = _find_free_port()
     backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    python_exe = os.path.join(backend_dir, "venv", "Scripts", "python.exe")
+    python_exe = sys.executable
 
     proc = subprocess.Popen(
         [python_exe, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
         cwd=backend_dir,
+        env=os.environ.copy(),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
