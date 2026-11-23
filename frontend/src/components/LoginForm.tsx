@@ -61,6 +61,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         </p>
       </div>
 
+      {mode === "register" && (
+        <div className="mb-5 p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs flex items-center gap-2">
+          <span className="text-base">ℹ️</span>
+          <span>
+            <strong>Member Registration:</strong> Public sign-up provides Member access only. Admin roles cannot be self-assigned.
+          </span>
+        </div>
+      )}
+
       {error && (
         <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
           <span className="font-bold text-sm">✕</span>

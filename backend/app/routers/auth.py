@@ -69,10 +69,11 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
     """
     Register a new user account.
     SAFEGUARDS:
-    1. Role is strictly hardcoded to UserRole.member — admin role can NEVER be self-assigned.
-    2. Email uniqueness enforced at DB and application layer (returns 409 EMAIL_ALREADY_EXISTS).
-    3. Password securely hashed with salted bcrypt.
-    4. Automatically returns JWT token and UserOut for seamless instant login.
+    1. Admin accounts cannot be self-registered. Explicitly returns 403 Forbidden if requested.
+    2. Role is strictly assigned to UserRole.member.
+    3. Email uniqueness enforced at DB and application layer (returns 409 EMAIL_ALREADY_EXISTS).
+    4. Password securely hashed with salted bcrypt.
+    5. Automatically returns JWT token and UserOut for seamless instant login.
     """
     clean_email = body.email.strip().lower()
     clean_name = body.name.strip()
@@ -81,6 +82,29 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"error": {"code": "INVALID_NAME", "message": "Name cannot be empty or whitespace only."}},
+        )
+
+    # Safeguard: Admin role cannot be self-assigned via registration
+    if body.role and body.role.strip().lower() == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": {
+                    "code": "ADMIN_REGISTRATION_PROHIBITED",
+                    "message": "Admin accounts cannot be self-registered. Registration is authorized for pantry members only.",
+                }
+            },
+        )
+
+    if body.role and body.role.strip().lower() not in ("member", ""):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": {
+                    "code": "INVALID_ROLE",
+                    "message": "Invalid role requested. Public registration is only available for members.",
+                }
+            },
         )
 
     # Check email uniqueness

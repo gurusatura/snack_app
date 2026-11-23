@@ -71,8 +71,8 @@ def test_register_success():
 def test_register_privilege_escalation_prevented():
     """
     CRITICAL SECURITY TEST:
-    A client injecting 'role: admin' into the registration payload MUST be ignored;
-    the backend must strictly enforce UserRole.member.
+    A client injecting 'role: admin' into the registration payload MUST be explicitly rejected with 403 Forbidden;
+    admin accounts can NEVER be self-registered.
     """
     email = f"hacker_{int(time.time() * 1000)}@snackoverflow.local"
     payload = {
@@ -83,24 +83,25 @@ def test_register_privilege_escalation_prevented():
     }
 
     res = client.post("/auth/register", json=payload)
-    assert res.status_code == 201
+    assert res.status_code == 403
     data = res.json()
+    assert data["error"]["code"] == "ADMIN_REGISTRATION_PROHIBITED"
+    assert "Admin accounts cannot be self-registered" in data["error"]["message"]
 
-    # Response must report role as member
-    assert data["user"]["role"] == "member"
-
-    # DB record must strictly have role = member
+    # DB record must NOT have been created
     db = SessionLocal()
     try:
         user_in_db = db.query(User).filter(User.email == email.lower()).first()
-        assert user_in_db is not None
-        assert user_in_db.role == UserRole.member
+        assert user_in_db is None
     finally:
         db.close()
 
-    # Admin route must reject this token with 403 Forbidden
-    res_admin = client.get("/activity", headers={"Authorization": f"Bearer {data['token']}"})
-    assert res_admin.status_code == 403
+    # Invalid role attempt must return 422
+    payload["role"] = "superadmin"
+    res_invalid = client.post("/auth/register", json=payload)
+    assert res_invalid.status_code == 422
+    data_inv = res_invalid.json()
+    assert data_inv["error"]["code"] == "INVALID_ROLE"
 
 
 def test_register_duplicate_email():

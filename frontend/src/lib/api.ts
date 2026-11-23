@@ -38,11 +38,19 @@ export const getApiErrorMessage = (error: unknown, fallback: string = "An unexpe
   if (typeof err?.response?.data?.detail === "string") {
     return err.response.data.detail;
   }
+  if (typeof err?.response?.data === "string" && err.response.data.trim()) {
+    return err.response.data.trim();
+  }
   if (err?.code === "ECONNABORTED" || err?.message?.includes("timeout")) {
     return "Connection timed out due to network latency. Please try signing in.";
   }
-  if (err?.message === "Network Error" || err?.code === "ERR_NETWORK") {
-    return "Cannot reach the backend server. Please verify the backend is running on http://localhost:8000.";
+  if (
+    err?.message === "Network Error" ||
+    err?.code === "ERR_NETWORK" ||
+    err?.code === "ECONNREFUSED" ||
+    !err?.response
+  ) {
+    return "Cannot reach backend server. Please verify the backend is running on http://localhost:8000.";
   }
   if (err?.message && typeof err.message === "string" && !err.message.includes("status code")) {
     return err.message;
