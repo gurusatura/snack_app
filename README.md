@@ -209,6 +209,7 @@ erDiagram
     users ||--o{ votes : "casts (CASCADE)"
     users ||--o{ activity : "performs (RESTRICT)"
     users ||--o{ idempotency_keys : "issues (CASCADE)"
+    users ||--o{ login_history : "records (SET NULL)"
     snacks ||--o{ votes : "receives (CASCADE)"
     snacks ||--o{ activity : "logs (RESTRICT)"
 
@@ -254,6 +255,14 @@ erDiagram
         string response_body
         timestamp created_at
     }
+
+    login_history {
+        int id PK
+        int user_id FK
+        string attempted_email
+        boolean success
+        timestamp timestamp
+    }
 ```
 
 ### Derived Stock Status (Computed Dynamically)
@@ -284,6 +293,7 @@ All protected endpoints require an `Authorization: Bearer <token>` header.
 | `DELETE`| `/snacks/{id}` | **Admin Only** | Delete snack (blocked if activity history exists) | `200`, `401`, `403`, `404`, `409` |
 | `POST` | `/snacks/{id}/restock` | **Admin Only** | Atomically restock inventory packets | `200`, `401`, `403`, `404`, `422` |
 | `GET` | `/activity` | **Admin Only** | Paginated audit log joining user, snack, action, amount | `200`, `401`, `403` |
+| `GET` | `/login-history` | **Admin Only** | Paginated login security audit log (user, attempted email, outcome, timestamp) | `200`, `401`, `403` |
 
 ---
 

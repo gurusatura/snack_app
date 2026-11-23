@@ -79,3 +79,21 @@ export interface ActivityListResponse {
   limit: number;
   total_pages: number;
 }
+
+export interface LoginHistoryItem {
+  id: number;
+  user_id: number | null;
+  user_name: string | null;
+  user_email: string | null;
+  attempted_email: string | null;
+  success: boolean;
+  timestamp: string;
+}
+
+export interface LoginHistoryListResponse {
+  items: LoginHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}

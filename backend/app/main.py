@@ -7,6 +7,7 @@ from app.config import get_settings
 from app.routers.auth import router as auth_router
 from app.routers.snacks import router as snacks_router
 from app.routers.activity import router as activity_router
+from app.routers.login_history import router as login_history_router
 
 settings = get_settings()
 
@@ -59,6 +60,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 app.include_router(auth_router)
 app.include_router(snacks_router)
 app.include_router(activity_router)
+app.include_router(login_history_router)
 
 
 @app.get("/health", tags=["Health"])

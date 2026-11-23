@@ -1,7 +1,7 @@
 import os
 import sys
 from app.database import SessionLocal
-from app.models import Snack, User, Vote, Activity
+from app.models import Snack, User, Vote, Activity, LoginHistory
 
 def check_and_clean():
     db = SessionLocal()
@@ -60,6 +60,16 @@ def check_and_clean():
         print(f"\nTotal users in DB: {len(users)}")
         for u in users:
             print(f"  [ID {u.id}] {u.name} ({u.email}) - {u.role.value}")
+
+        # Purge test login history attempts
+        test_login_records = db.query(LoginHistory).filter(
+            LoginHistory.attempted_email.like("%ghost%")
+            | LoginHistory.attempted_email.like("unknown_%")
+            | LoginHistory.attempted_email.like("%test%")
+        ).delete(synchronize_session=False)
+        db.commit()
+        if test_login_records:
+            print(f"Purged {test_login_records} test login history records.")
 
     finally:
         db.close()

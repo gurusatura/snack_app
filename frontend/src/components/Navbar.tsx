@@ -38,16 +38,28 @@ export const Navbar: React.FC = () => {
                 Pantry
               </Link>
               {isAdmin && (
-                <Link
-                  href="/activity"
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 ${
-                    pathname === "/activity"
-                      ? "bg-purple-50 text-purple-900 border border-purple-200"
-                      : "text-gray-600 hover:text-purple-700 hover:bg-purple-50/50"
-                  }`}
-                >
-                  Activity Log
-                </Link>
+                <>
+                  <Link
+                    href="/activity"
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 ${
+                      pathname === "/activity"
+                        ? "bg-purple-50 text-purple-900 border border-purple-200"
+                        : "text-gray-600 hover:text-purple-700 hover:bg-purple-50/50"
+                    }`}
+                  >
+                    Activity Log
+                  </Link>
+                  <Link
+                    href="/login-history"
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 ${
+                      pathname === "/login-history"
+                        ? "bg-blue-50 text-blue-900 border border-blue-200"
+                        : "text-gray-600 hover:text-blue-700 hover:bg-blue-50/50"
+                    }`}
+                  >
+                    Login Audit
+                  </Link>
+                </>
               )}
             </nav>
           )}

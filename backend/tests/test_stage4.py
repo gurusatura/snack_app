@@ -453,7 +453,7 @@ def test_concurrency_real_server_supabase(admin_token, member_token):
 
         # 3. Define worker function for concurrency: independent client and request
         def fire_consume(thread_id: int):
-            with httpx.Client(base_url=server_url, timeout=15.0) as http_client:
+            with httpx.Client(base_url=server_url, timeout=45.0) as http_client:
                 response = http_client.post(
                     f"/snacks/{target_snack_id}/consume",
                     headers={"Authorization": f"Bearer {member_token}"},

@@ -1,5 +1,6 @@
 import enum
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Column,
     DateTime,
@@ -147,6 +148,19 @@ class IdempotencyKey(Base):
     status_code = Column(Integer, nullable=False)
     response_body = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
+
+    # Relationships
+    user = relationship("User")
+
+
+class LoginHistory(Base):
+    __tablename__ = "login_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    attempted_email = Column(String(255), nullable=True, index=True)
+    success = Column(Boolean, nullable=False, index=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
 
     # Relationships
     user = relationship("User")

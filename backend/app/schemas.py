@@ -124,3 +124,26 @@ class ActivityListResponse(BaseModel):
     limit: int
     total_pages: int
 
+
+# ---------- Login History Schemas (Stage 12 Login Audit) ----------
+
+class LoginHistoryOut(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
+    attempted_email: Optional[str] = None
+    success: bool
+    timestamp: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LoginHistoryListResponse(BaseModel):
+    items: List[LoginHistoryOut]
+    total: int
+    page: int
+    limit: int
+    total_pages: int
+
+
