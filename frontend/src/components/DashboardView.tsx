@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { api, getApiErrorMessage } from "@/lib/api";
-import { Snack, StockSummary, SnackOfTheWeek, SnackSummaryResponse, SnackListResponse, SnackCategory } from "@/types";
+import { Snack, StockSummary, SnackOfTheWeek, SnackSummaryResponse, SnackListResponse, SnackCategory, SnackStatus } from "@/types";
 import { Navbar } from "./Navbar";
 import { SummaryCards } from "./SummaryCards";
 import { SnackFilters } from "./SnackFilters";
@@ -42,42 +42,45 @@ export const DashboardView: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // 1. Fetch Summary
-  const fetchSummary = useCallback(async () => {
+  const fetchSummary = useCallback(async (silent = false) => {
     try {
-      setLoadingSummary(true);
+      if (!silent) setLoadingSummary(true);
       const res = await api.get<SnackSummaryResponse>("/snacks/summary");
       setSummary(res.data.stock_summary);
       setSnackOfTheWeek(res.data.snack_of_the_week);
     } catch (err) {
       console.error("Failed to load summary:", err);
     } finally {
-      setLoadingSummary(false);
+      if (!silent) setLoadingSummary(false);
     }
   }, []);
 
   // 2. Fetch Snacks
-  const fetchSnacks = useCallback(async () => {
-    try {
-      setLoadingSnacks(true);
-      setError(null);
-      const params = new URLSearchParams();
-      if (search.trim()) params.append("search", search.trim());
-      if (category) params.append("category", category);
-      if (status) params.append("status", status);
-      params.append("page", page.toString());
-      params.append("limit", "12");
+  const fetchSnacks = useCallback(
+    async (silent = false) => {
+      try {
+        if (!silent) setLoadingSnacks(true);
+        setError(null);
+        const params = new URLSearchParams();
+        if (search.trim()) params.append("search", search.trim());
+        if (category) params.append("category", category);
+        if (status) params.append("status", status);
+        params.append("page", page.toString());
+        params.append("limit", "12");
 
-      const res = await api.get<SnackListResponse>(`/snacks?${params.toString()}`);
-      setSnacks(res.data.items);
-      setTotal(res.data.total);
-      setTotalPages(res.data.total_pages);
-    } catch (err: unknown) {
-      const msg = getApiErrorMessage(err, "Failed to load snacks. Please try again.");
-      setError(msg);
-    } finally {
-      setLoadingSnacks(false);
-    }
-  }, [search, category, status, page]);
+        const res = await api.get<SnackListResponse>(`/snacks?${params.toString()}`);
+        setSnacks(res.data.items);
+        setTotal(res.data.total);
+        setTotalPages(res.data.total_pages);
+      } catch (err: unknown) {
+        const msg = getApiErrorMessage(err, "Failed to load snacks. Please try again.");
+        setError(msg);
+      } finally {
+        if (!silent) setLoadingSnacks(false);
+      }
+    },
+    [search, category, status, page]
+  );
 
   useEffect(() => {
     fetchSummary();
@@ -94,17 +97,38 @@ export const DashboardView: React.FC = () => {
     if (!consumingSnack) return;
     try {
       const res = await api.post(`/snacks/${consumingSnack.id}/consume`, { amount });
+      const newQty = res.data.remaining_quantity;
+      const newStatus: SnackStatus =
+        newQty === 0
+          ? "gone"
+          : newQty <= consumingSnack.low_stock_threshold
+          ? "running_low"
+          : "stocked";
+
+      // Smooth in-place state update: Zero screen flash, zero skeleton unmount
+      setSnacks((prev) =>
+        prev.map((s) =>
+          s.id === consumingSnack.id
+            ? { ...s, quantity: newQty, status: newStatus }
+            : s
+        )
+      );
+
       showToast(
-        `Enjoy your snack! Grabbed ${amount} packet(s). ${res.data.remaining_quantity} left in pantry.`,
+        `Enjoy your snack! Grabbed ${amount} packet(s). ${newQty} left in pantry.`,
         "success"
       );
-      fetchSnacks();
-      fetchSummary();
+      // Silent background refresh to guarantee synchronization
+      fetchSnacks(true);
+      fetchSummary(true);
     } catch (err: unknown) {
-      const msg = getApiErrorMessage(err, "Someone beat you to the last packet! Not enough stock remaining.");
+      const msg = getApiErrorMessage(
+        err,
+        "Someone beat you to the last packet! Not enough stock remaining."
+      );
       showToast(msg, "warning");
-      fetchSnacks();
-      fetchSummary();
+      fetchSnacks(true);
+      fetchSummary(true);
     }
   };
 
@@ -113,12 +137,29 @@ export const DashboardView: React.FC = () => {
     if (!restockingSnack) return;
     try {
       const res = await api.post(`/snacks/${restockingSnack.id}/restock`, { amount });
+      const newQty = res.data.new_quantity;
+      const newStatus: SnackStatus =
+        newQty === 0
+          ? "gone"
+          : newQty <= restockingSnack.low_stock_threshold
+          ? "running_low"
+          : "stocked";
+
+      // Smooth in-place state update
+      setSnacks((prev) =>
+        prev.map((s) =>
+          s.id === restockingSnack.id
+            ? { ...s, quantity: newQty, status: newStatus }
+            : s
+        )
+      );
+
       showToast(
-        `Restocked! Added ${amount} packet(s). Total now: ${res.data.new_quantity}.`,
+        `Restocked! Added ${amount} packet(s). Total now: ${newQty}.`,
         "success"
       );
-      fetchSnacks();
-      fetchSummary();
+      fetchSnacks(true);
+      fetchSummary(true);
     } catch (err: unknown) {
       const msg = getApiErrorMessage(err, "Failed to restock snack.");
       showToast(msg, "error");
@@ -127,6 +168,18 @@ export const DashboardView: React.FC = () => {
 
   // Vote Toggle
   const handleVoteToggle = async (snack: Snack) => {
+    const nextVoted = !snack.user_voted;
+    const nextVotesCount = nextVoted ? snack.votes_count + 1 : Math.max(0, snack.votes_count - 1);
+
+    // Optimistic in-place update for instant responsiveness
+    setSnacks((prev) =>
+      prev.map((s) =>
+        s.id === snack.id
+          ? { ...s, user_voted: nextVoted, votes_count: nextVotesCount }
+          : s
+      )
+    );
+
     try {
       if (snack.user_voted) {
         await api.delete(`/snacks/${snack.id}/vote`);
@@ -135,12 +188,19 @@ export const DashboardView: React.FC = () => {
         await api.post(`/snacks/${snack.id}/vote`);
         showToast(`Voted for ${snack.name}! ❤️`, "success");
       }
-      fetchSnacks();
-      fetchSummary();
+      fetchSummary(true);
+      fetchSnacks(true);
     } catch (err: unknown) {
+      // Revert if request failed
+      setSnacks((prev) =>
+        prev.map((s) =>
+          s.id === snack.id
+            ? { ...s, user_voted: snack.user_voted, votes_count: snack.votes_count }
+            : s
+        )
+      );
       const msg = getApiErrorMessage(err, "Vote action failed.");
       showToast(msg, "warning");
-      fetchSnacks();
     }
   };
 
@@ -153,8 +213,8 @@ export const DashboardView: React.FC = () => {
   }) => {
     await api.post("/snacks", data);
     showToast(`Added "${data.name}" to the pantry!`, "success");
-    fetchSnacks();
-    fetchSummary();
+    fetchSnacks(false);
+    fetchSummary(true);
   };
 
   // Edit Snack (Admin)
@@ -165,10 +225,12 @@ export const DashboardView: React.FC = () => {
     low_stock_threshold: number;
   }) => {
     if (!editingSnack) return;
-    await api.patch(`/snacks/${editingSnack.id}`, data);
+    const res = await api.patch(`/snacks/${editingSnack.id}`, data);
+    setSnacks((prev) =>
+      prev.map((s) => (s.id === editingSnack.id ? res.data : s))
+    );
     showToast(`Updated "${data.name}".`, "success");
-    fetchSnacks();
-    fetchSummary();
+    fetchSummary(true);
   };
 
   // Delete Snack (Admin)
@@ -176,9 +238,9 @@ export const DashboardView: React.FC = () => {
     if (!deletingSnack) return;
     try {
       await api.delete(`/snacks/${deletingSnack.id}`);
+      setSnacks((prev) => prev.filter((s) => s.id !== deletingSnack.id));
       showToast(`Deleted "${deletingSnack.name}".`, "success");
-      fetchSnacks();
-      fetchSummary();
+      fetchSummary(true);
     } catch (err: unknown) {
       const msg = getApiErrorMessage(
         err,
@@ -247,7 +309,7 @@ export const DashboardView: React.FC = () => {
         />
 
         {/* Snack List Grid */}
-        {loadingSnacks ? (
+        {loadingSnacks && snacks.length === 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div key={i} className="h-56 bg-gray-200/70 rounded-2xl animate-pulse" />
@@ -257,7 +319,7 @@ export const DashboardView: React.FC = () => {
           <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-md mx-auto my-12">
             <p className="text-red-800 text-sm font-semibold mb-3">{error}</p>
             <button
-              onClick={fetchSnacks}
+              onClick={() => fetchSnacks(false)}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors"
             >
               Retry
