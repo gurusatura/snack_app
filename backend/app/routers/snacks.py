@@ -3,7 +3,7 @@ import math
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_, case, func, text
+from sqlalchemy import and_, case, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -103,13 +103,14 @@ def list_snacks(
     category: Optional[SnackCategory] = None,
     status_filter: Optional[str] = Query(None, alias="status"),
     search: Optional[str] = None,
+    sort: Optional[str] = Query(None, description="Sort order: name_asc, name_desc, quantity_asc, quantity_desc, votes_desc"),
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    List snacks with SQL-level filtering for category, derived status, and case-insensitive search.
+    List snacks with SQL-level filtering for category, derived status, case-insensitive search, and sorting.
     """
     query = db.query(Snack)
 
@@ -134,14 +135,68 @@ def list_snacks(
     total = query.count()
     total_pages = math.ceil(total / limit) if total > 0 else 1
 
+    # Sorting options via SQL ORDER BY
+    if sort in ("name_asc", "name"):
+        order_clauses = [Snack.name.asc()]
+    elif sort == "name_desc":
+        order_clauses = [Snack.name.desc()]
+    elif sort in ("quantity_asc", "quantity"):
+        order_clauses = [Snack.quantity.asc(), Snack.name.asc()]
+    elif sort == "quantity_desc":
+        order_clauses = [Snack.quantity.desc(), Snack.name.asc()]
+    elif sort in ("votes_desc", "votes", "popular"):
+        vote_subquery = (
+            select(func.count(Vote.id))
+            .where(Vote.snack_id == Snack.id)
+            .scalar_subquery()
+        )
+        order_clauses = [vote_subquery.desc(), Snack.name.asc()]
+    else:
+        order_clauses = [Snack.id.asc()]
+
     snacks = (
-        query.order_by(Snack.id.asc())
+        query.order_by(*order_clauses)
         .offset((page - 1) * limit)
         .limit(limit)
         .all()
     )
 
-    items = [_snack_to_out(s, current_user.id, db) for s in snacks]
+    if snacks:
+        snack_ids = [s.id for s in snacks]
+
+        # 1. Bulk vote counts in a single SQL query
+        vote_counts_rows = (
+            db.query(Vote.snack_id, func.count(Vote.id))
+            .filter(Vote.snack_id.in_(snack_ids))
+            .group_by(Vote.snack_id)
+            .all()
+        )
+        vote_counts_map = {row[0]: row[1] for row in vote_counts_rows}
+
+        # 2. Bulk user votes in a single SQL query
+        user_voted_rows = (
+            db.query(Vote.snack_id)
+            .filter(Vote.snack_id.in_(snack_ids), Vote.user_id == current_user.id)
+            .all()
+        )
+        user_voted_set = {row[0] for row in user_voted_rows}
+
+        items = [
+            SnackOut(
+                id=s.id,
+                name=s.name,
+                category=s.category.value if hasattr(s.category, "value") else str(s.category),
+                quantity=s.quantity,
+                low_stock_threshold=s.low_stock_threshold,
+                status=s.status,
+                created_at=s.created_at,
+                votes_count=vote_counts_map.get(s.id, 0),
+                user_voted=s.id in user_voted_set,
+            )
+            for s in snacks
+        ]
+    else:
+        items = []
 
     return SnackListResponse(
         items=items,

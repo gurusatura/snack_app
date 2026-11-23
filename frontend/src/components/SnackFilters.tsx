@@ -10,6 +10,8 @@ interface SnackFiltersProps {
   onCategoryChange: (value: string) => void;
   status: string;
   onStatusChange: (value: string) => void;
+  sort: string;
+  onSortChange: (value: string) => void;
   isAdmin: boolean;
   onAddClick: () => void;
 }
@@ -29,6 +31,15 @@ const STATUSES: { label: string; value: string }[] = [
   { label: "Gone", value: "gone" },
 ];
 
+const SORT_OPTIONS: { label: string; value: string }[] = [
+  { label: "Default Order", value: "" },
+  { label: "Name: A to Z", value: "name_asc" },
+  { label: "Name: Z to A", value: "name_desc" },
+  { label: "Quantity: Low to High", value: "quantity_asc" },
+  { label: "Quantity: High to Low", value: "quantity_desc" },
+  { label: "Most Popular First ⭐", value: "votes_desc" },
+];
+
 export const SnackFilters: React.FC<SnackFiltersProps> = ({
   search,
   onSearchChange,
@@ -36,6 +47,8 @@ export const SnackFilters: React.FC<SnackFiltersProps> = ({
   onCategoryChange,
   status,
   onStatusChange,
+  sort,
+  onSortChange,
   isAdmin,
   onAddClick,
 }) => {
@@ -86,6 +99,20 @@ export const SnackFilters: React.FC<SnackFiltersProps> = ({
           {STATUSES.map((s) => (
             <option key={s.value} value={s.value}>
               {s.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Sort Select */}
+        <select
+          value={sort}
+          onChange={(e) => onSortChange(e.target.value)}
+          aria-label="Sort snacks order"
+          className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
           ))}
         </select>

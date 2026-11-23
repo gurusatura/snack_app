@@ -28,6 +28,7 @@ export const DashboardView: React.FC = () => {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
+  const [sort, setSort] = useState("");
 
   // Loading & error states
   const [loadingSummary, setLoadingSummary] = useState(true);
@@ -49,7 +50,7 @@ export const DashboardView: React.FC = () => {
       setSummary(res.data.stock_summary);
       setSnackOfTheWeek(res.data.snack_of_the_week);
     } catch (err) {
-      console.error("Failed to load summary:", err);
+      console.warn("Summary data temporarily unavailable:", err);
     } finally {
       if (!silent) setLoadingSummary(false);
     }
@@ -65,6 +66,7 @@ export const DashboardView: React.FC = () => {
         if (search.trim()) params.append("search", search.trim());
         if (category) params.append("category", category);
         if (status) params.append("status", status);
+        if (sort) params.append("sort", sort);
         params.append("page", page.toString());
         params.append("limit", "12");
 
@@ -79,7 +81,7 @@ export const DashboardView: React.FC = () => {
         if (!silent) setLoadingSnacks(false);
       }
     },
-    [search, category, status, page]
+    [search, category, status, sort, page]
   );
 
   useEffect(() => {
@@ -304,6 +306,11 @@ export const DashboardView: React.FC = () => {
             setStatus(v);
             setPage(1);
           }}
+          sort={sort}
+          onSortChange={(v) => {
+            setSort(v);
+            setPage(1);
+          }}
           isAdmin={isAdmin}
           onAddClick={() => setIsAddModalOpen(true)}
         />
@@ -332,12 +339,13 @@ export const DashboardView: React.FC = () => {
             <p className="text-xs text-gray-500 mb-4">
               Try adjusting your search terms or filter selections.
             </p>
-            {(search || category || status) && (
+            {(search || category || status || sort) && (
               <button
                 onClick={() => {
                   setSearch("");
                   setCategory("");
                   setStatus("");
+                  setSort("");
                   setPage(1);
                 }}
                 className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors"
