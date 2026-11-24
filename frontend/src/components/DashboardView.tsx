@@ -11,7 +11,7 @@ import { SummaryCards } from "./SummaryCards";
 import { SnackFilters } from "./SnackFilters";
 import { SnackCard } from "./SnackCard";
 import { ConsumeModal, RestockModal, AddEditSnackModal, DeleteModal } from "./Modals";
-import { RotateCw, Sparkles, ArrowRight, Package, AlertCircle } from "lucide-react";
+import { RotateCw, Sparkles, ArrowRight, Package, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const DashboardView: React.FC = () => {
@@ -119,8 +119,8 @@ export const DashboardView: React.FC = () => {
         newQty === 0
           ? "gone"
           : newQty <= consumingSnack.low_stock_threshold
-          ? "running_low"
-          : "stocked";
+            ? "running_low"
+            : "stocked";
 
       // Smooth in-place state update: Zero screen flash, zero skeleton unmount
       setSnacks((prev) =>
@@ -159,8 +159,8 @@ export const DashboardView: React.FC = () => {
         newQty === 0
           ? "gone"
           : newQty <= restockingSnack.low_stock_threshold
-          ? "running_low"
-          : "stocked";
+            ? "running_low"
+            : "stocked";
 
       // Smooth in-place state update
       setSnacks((prev) =>
@@ -203,7 +203,7 @@ export const DashboardView: React.FC = () => {
         showToast(`Vote removed for ${snack.name}.`, "info");
       } else {
         await api.post(`/snacks/${snack.id}/vote`);
-        showToast(`Voted for ${snack.name}! ❤️`, "success");
+        showToast(`Voted for ${snack.name}!`, "success");
       }
       fetchSummary(true);
       fetchSnacks(true);
@@ -352,13 +352,13 @@ export const DashboardView: React.FC = () => {
         {loadingSnacks && snacks.length === 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="h-64 bg-amber-100/30 rounded-2xl animate-pulse border border-amber-900/5" />
+              <div key={i} className="h-64 bg-[#EFEAE1]/50 rounded-2xl animate-pulse border border-[#E6DFD3]" />
             ))}
           </div>
         ) : error ? (
-          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-8 text-center max-w-md mx-auto my-12">
-            <AlertCircle className="w-8 h-8 text-rose-600 mx-auto mb-2" />
-            <p className="text-rose-800 text-xs font-semibold mb-3">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-md mx-auto my-12">
+            <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
+            <p className="text-red-800 text-xs font-semibold mb-3">{error}</p>
             <Button
               onClick={() => fetchSnacks(false)}
               variant="destructive"
@@ -368,10 +368,10 @@ export const DashboardView: React.FC = () => {
             </Button>
           </div>
         ) : snacks.length === 0 ? (
-          <div className="bg-[#FFFDF9] border border-amber-900/10 rounded-3xl p-12 text-center max-w-md mx-auto my-8 shadow-xs">
-            <Package className="w-12 h-12 text-amber-500/80 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-stone-900 mb-1">No snacks found</h3>
-            <p className="text-xs text-stone-500 mb-4">
+          <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-3xl p-12 text-center max-w-md mx-auto my-8 shadow-xs">
+            <Package className="w-12 h-12 text-[#C2410C] mx-auto mb-3 opacity-80" />
+            <h3 className="text-base font-bold text-[#2B1E16] mb-1">No snacks found</h3>
+            <p className="text-xs text-[#6E5D53] mb-4">
               Try adjusting your search terms or filter selections.
             </p>
             {(search || category || status || sort) && (
@@ -409,25 +409,29 @@ export const DashboardView: React.FC = () => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-between border-t border-amber-900/10 pt-4 text-sm">
+              <div className="mt-8 flex items-center justify-between border-t border-[#E6DFD3] pt-4 text-sm">
                 <Button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
                   variant="outline"
                   size="sm"
+                  className="gap-1"
                 >
-                  ← Previous
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Previous</span>
                 </Button>
-                <span className="text-xs text-stone-500 font-semibold">
-                  Page <strong className="text-stone-800">{page}</strong> of <strong className="text-stone-800">{totalPages}</strong> ({total} snacks)
+                <span className="text-xs text-[#6E5D53] font-medium">
+                  Page <strong className="text-[#2B1E16] font-bold">{page}</strong> of <strong className="text-[#2B1E16] font-bold">{totalPages}</strong> ({total} snacks)
                 </span>
                 <Button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
                   variant="outline"
                   size="sm"
+                  className="gap-1"
                 >
-                  Next →
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
             )}

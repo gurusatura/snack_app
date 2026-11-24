@@ -10,7 +10,7 @@ import { Navbar } from "@/components/Navbar";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, RotateCw, ArrowLeft, ShieldAlert, Package, Layers } from "lucide-react";
+import { Clock, RotateCw, ArrowLeft, ShieldAlert, Package, Layers, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function ActivityPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -74,8 +74,9 @@ export default function ActivityPage() {
               The pantry activity audit log is restricted to administrative staff only.
             </p>
             <Link href="/">
-              <Button variant="default" size="sm">
-                ← Return to Pantry
+              <Button variant="default" size="sm" className="gap-1.5">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Return to Pantry</span>
               </Button>
             </Link>
           </Card>
@@ -248,16 +249,20 @@ export default function ActivityPage() {
                   size="sm"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1 || loading}
+                  className="gap-1"
                 >
-                  Previous
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Previous</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages || loading}
+                  className="gap-1"
                 >
-                  Next
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>

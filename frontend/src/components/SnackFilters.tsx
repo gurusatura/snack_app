@@ -39,7 +39,7 @@ const SORT_OPTIONS: { label: string; value: string }[] = [
   { label: "Name: Z → A", value: "name_desc" },
   { label: "Quantity: Low → High", value: "quantity_asc" },
   { label: "Quantity: High → Low", value: "quantity_desc" },
-  { label: "Most Popular First ⭐", value: "votes_desc" },
+  { label: "Most Popular (Highest Votes)", value: "votes_desc" },
 ];
 
 export const SnackFilters: React.FC<SnackFiltersProps> = ({

@@ -38,10 +38,10 @@ export const ConsumeModal: React.FC<ConsumeModalProps> = ({ snack, onClose, onCo
       description={`How many packets of ${snack.name} are you taking?`}
     >
       <form onSubmit={handleSubmit}>
-        <div className="mb-5 bg-amber-50/50 p-4 rounded-xl border border-amber-900/10">
-          <div className="flex items-center justify-between text-xs text-stone-600 mb-2 font-medium">
+        <div className="mb-5 bg-[#FAF6F0] p-4 rounded-xl border border-[#E6DFD3]">
+          <div className="flex items-center justify-between text-xs text-[#6E5D53] mb-2 font-medium">
             <span>Packets to take</span>
-            <span className="font-bold text-stone-900">Available: {snack.quantity}</span>
+            <span className="font-bold text-[#2B1E16]">Available: {snack.quantity}</span>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -49,7 +49,7 @@ export const ConsumeModal: React.FC<ConsumeModalProps> = ({ snack, onClose, onCo
               variant="outline"
               size="icon"
               onClick={() => setAmount((a) => Math.max(1, a - 1))}
-              className="h-10 w-10 text-stone-700"
+              className="h-10 w-10 text-[#2B1E16]"
             >
               <Minus className="w-4 h-4" />
             </Button>
@@ -59,14 +59,14 @@ export const ConsumeModal: React.FC<ConsumeModalProps> = ({ snack, onClose, onCo
               max={Math.max(1, snack.quantity)}
               value={amount}
               onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
-              className="flex-1 text-center font-black text-xl py-2 bg-white border border-amber-900/15 rounded-xl text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 shadow-xs"
+              className="flex-1 text-center font-black text-xl py-2 bg-[#FFFDF9] border border-[#E6DFD3] rounded-xl text-[#2B1E16] focus:outline-hidden focus:ring-2 focus:ring-[#C2410C] shadow-xs"
             />
             <Button
               type="button"
               variant="outline"
               size="icon"
               onClick={() => setAmount((a) => Math.min(snack.quantity, a + 1))}
-              className="h-10 w-10 text-stone-700"
+              className="h-10 w-10 text-[#2B1E16]"
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -130,19 +130,19 @@ export const RestockModal: React.FC<RestockModalProps> = ({ snack, onClose, onRe
       description={`Add fresh stock for ${snack.name}.`}
     >
       <form onSubmit={handleSubmit}>
-        <div className="mb-5 bg-purple-50/50 p-4 rounded-xl border border-purple-200/60">
-          <label className="block text-xs font-bold text-purple-900 mb-1.5">Packets to Add</label>
+        <div className="mb-5 bg-[#E6F0EE] p-4 rounded-xl border border-[#16433C]/20">
+          <label className="block text-xs font-bold text-[#16433C] mb-1.5">Packets to Add</label>
           <input
             type="number"
             min="1"
             max="1000"
             value={amount}
             onChange={(e) => setAmount(parseInt(e.target.value) || 0)}
-            className="w-full text-center font-black text-xl py-2 bg-white border border-purple-200 rounded-xl text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-purple-500 shadow-xs"
+            className="w-full text-center font-black text-xl py-2 bg-[#FFFDF9] border border-[#16433C]/30 rounded-xl text-[#16433C] focus:outline-hidden focus:ring-2 focus:ring-[#16433C] shadow-xs"
           />
-          <p className="text-xs text-purple-700/80 mt-2 font-medium">
-            Current: <strong className="text-stone-900">{snack.quantity}</strong> → New:{" "}
-            <strong className="text-purple-900">{snack.quantity + (isNaN(amount) ? 0 : amount)}</strong> packets
+          <p className="text-xs text-[#16433C]/80 mt-2 font-medium">
+            Current: <strong className="text-[#2B1E16]">{snack.quantity}</strong> → New:{" "}
+            <strong className="text-[#16433C]">{snack.quantity + (isNaN(amount) ? 0 : amount)}</strong> packets
           </p>
         </div>
 
@@ -158,8 +158,9 @@ export const RestockModal: React.FC<RestockModalProps> = ({ snack, onClose, onRe
           </Button>
           <Button
             type="submit"
+            variant="secondary"
             disabled={submitting || amount <= 0}
-            className="flex-1 bg-purple-700 hover:bg-purple-800 text-white shadow-xs"
+            className="flex-1 shadow-xs"
           >
             {submitting ? "Restocking..." : "Restock Pantry"}
           </Button>
@@ -217,30 +218,30 @@ export const AddEditSnackModal: React.FC<AddEditSnackModalProps> = ({ snack, onC
       description="Configure snack identity, category, and automatic stock alerts."
     >
       {error && (
-        <div className="mb-4 p-3 rounded-xl bg-rose-50 text-rose-800 text-xs border border-rose-200 font-medium">
+        <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-800 text-xs border border-red-200 font-medium">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-bold text-stone-700 mb-1">Snack Name</label>
+          <label className="block text-xs font-bold text-[#2B1E16] mb-1">Snack Name</label>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Masala Peanuts"
-            className="w-full px-3 py-2 bg-amber-50/40 border border-amber-900/15 rounded-xl text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white"
+            className="w-full px-3 py-2 bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl text-xs text-[#2B1E16] focus:outline-hidden focus:ring-2 focus:ring-[#C2410C] focus:bg-[#FFFDF9]"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-stone-700 mb-1">Category</label>
+          <label className="block text-xs font-bold text-[#2B1E16] mb-1">Category</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as SnackCategory)}
-            className="w-full px-3 py-2 bg-amber-50/40 border border-amber-900/15 rounded-xl text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white cursor-pointer font-medium"
+            className="w-full px-3 py-2 bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl text-xs text-[#2B1E16] focus:outline-hidden focus:ring-2 focus:ring-[#C2410C] focus:bg-[#FFFDF9] cursor-pointer font-medium"
           >
             <option value="sweet">Sweet</option>
             <option value="savoury">Savoury</option>
@@ -251,23 +252,23 @@ export const AddEditSnackModal: React.FC<AddEditSnackModalProps> = ({ snack, onC
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">Current Quantity</label>
+            <label className="block text-xs font-bold text-[#2B1E16] mb-1">Current Quantity</label>
             <input
               type="number"
               min="0"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 bg-amber-50/40 border border-amber-900/15 rounded-xl text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white"
+              className="w-full px-3 py-2 bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl text-xs text-[#2B1E16] focus:outline-hidden focus:ring-2 focus:ring-[#C2410C] focus:bg-[#FFFDF9]"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">Low-Stock Alert Threshold</label>
+            <label className="block text-xs font-bold text-[#2B1E16] mb-1">Low-Stock Alert Threshold</label>
             <input
               type="number"
               min="0"
               value={threshold}
               onChange={(e) => setThreshold(parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 bg-amber-50/40 border border-amber-900/15 rounded-xl text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white"
+              className="w-full px-3 py-2 bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl text-xs text-[#2B1E16] focus:outline-hidden focus:ring-2 focus:ring-[#C2410C] focus:bg-[#FFFDF9]"
             />
           </div>
         </div>
@@ -325,9 +326,9 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({ snack, onClose, onConf
       title="Delete Snack?"
       description={`Are you sure you want to delete "${snack.name}"? This action cannot be undone.`}
     >
-      <div className="p-4 mb-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3">
-        <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
-        <p className="text-xs text-rose-800 font-medium">
+      <div className="p-4 mb-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
+        <p className="text-xs text-red-800 font-medium">
           If this snack has activity history, it is preserved for audit safety.
         </p>
       </div>
