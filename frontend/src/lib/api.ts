@@ -29,18 +29,43 @@ api.interceptors.request.use((config) => {
 
 export const getApiErrorMessage = (error: unknown, fallback: string = "An unexpected error occurred"): string => {
   const err = error as any;
-  if (err?.response?.data?.error?.message) {
-    return err.response.data.error.message;
+  let data = err?.response?.data;
+
+  // Handle case where error response body might be a JSON string
+  if (typeof data === "string") {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      // Keep as string
+    }
   }
-  if (err?.response?.data?.detail?.error?.message) {
-    return err.response.data.detail.error.message;
+
+  // 1. Direct standard contract: error.response.data.error.message
+  if (data?.error?.message && typeof data.error.message === "string") {
+    return data.error.message;
   }
-  if (typeof err?.response?.data?.detail === "string") {
-    return err.response.data.detail;
+
+  // 2. FastAPI HTTPException detail format: error.response.data.detail.error.message
+  if (data?.detail?.error?.message && typeof data.detail.error.message === "string") {
+    return data.detail.error.message;
   }
-  if (typeof err?.response?.data === "string" && err.response.data.trim()) {
-    return err.response.data.trim();
+
+  // 3. String detail: error.response.data.detail
+  if (typeof data?.detail === "string" && data.detail.trim()) {
+    return data.detail.trim();
   }
+
+  // 4. Direct message field: error.response.data.message
+  if (typeof data?.message === "string" && data.message.trim()) {
+    return data.message.trim();
+  }
+
+  // 5. Direct error field if string: error.response.data.error
+  if (typeof data?.error === "string" && data.error.trim()) {
+    return data.error.trim();
+  }
+
+  // 6. Network / timeout errors
   if (err?.code === "ECONNABORTED" || err?.message?.includes("timeout")) {
     return "Connection timed out due to network latency. Please try signing in.";
   }
@@ -50,10 +75,18 @@ export const getApiErrorMessage = (error: unknown, fallback: string = "An unexpe
     err?.code === "ECONNREFUSED" ||
     !err?.response
   ) {
-    return "Cannot reach backend server. Please verify the backend is running on http://localhost:8000.";
+    return "Cannot reach backend server. Please verify the backend is running.";
   }
+
+  // 7. Non-JSON string response body
+  if (typeof data === "string" && data.trim() && !data.trim().startsWith("{")) {
+    return data.trim();
+  }
+
+  // 8. Clean Axios message (ignore generic status code messages)
   if (err?.message && typeof err.message === "string" && !err.message.includes("status code")) {
     return err.message;
   }
+
   return fallback;
 };

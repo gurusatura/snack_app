@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from "react";
+import { CheckCircle2, AlertTriangle, AlertCircle, Info, X } from "lucide-react";
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
@@ -56,20 +57,21 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 : "bg-blue-50 text-blue-900 border-blue-200"
             }`}
           >
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">
-                {toast.type === "error" && "✕"}
-                {toast.type === "warning" && "⚠"}
-                {toast.type === "success" && "✓"}
-                {toast.type === "info" && "ℹ"}
+            <div className="flex items-start gap-2.5">
+              <span className="shrink-0 mt-0.5">
+                {toast.type === "error" && <AlertCircle className="w-4 h-4 text-red-600" />}
+                {toast.type === "warning" && <AlertTriangle className="w-4 h-4 text-amber-600" />}
+                {toast.type === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                {toast.type === "info" && <Info className="w-4 h-4 text-blue-600" />}
               </span>
-              <span>{toast.message}</span>
+              <span className="leading-snug">{toast.message}</span>
             </div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="ml-3 text-gray-400 hover:text-gray-600 font-bold text-base leading-none"
+              className="ml-3 text-gray-400 hover:text-gray-600 p-0.5 rounded cursor-pointer"
+              aria-label="Close notification"
             >
-              ×
+              <X className="w-4 h-4" />
             </button>
           </div>
         ))}

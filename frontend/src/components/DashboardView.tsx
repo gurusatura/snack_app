@@ -139,10 +139,24 @@ export const DashboardView: React.FC = () => {
       fetchSnacks(true);
       fetchSummary(true);
     } catch (err: unknown) {
-      const msg = getApiErrorMessage(
-        err,
-        "Someone beat you to the last packet! Not enough stock remaining."
-      );
+      const anyErr = err as any;
+      let rawData = anyErr?.response?.data;
+      if (typeof rawData === "string") {
+        try {
+          rawData = JSON.parse(rawData);
+        } catch {
+          // Keep raw
+        }
+      }
+
+      const msg =
+        rawData?.error?.message ||
+        rawData?.detail?.error?.message ||
+        getApiErrorMessage(
+          err,
+          "Someone beat you to the last packet! Not enough stock remaining."
+        );
+
       showToast(msg, "warning");
       fetchSnacks(true);
       fetchSummary(true);
